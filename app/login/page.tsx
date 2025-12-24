@@ -60,11 +60,26 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+const getAuthHeader = async () => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) throw new Error("Sessione non valida. Rifai login.");
+  return { Authorization: `Bearer ${token}` };
+};
+
+
   const claimDaily = async () => {
     setBusy(true);
     setMessage("");
     try {
-      const res = await fetch("/api/claim-daily", { method: "POST" });
+      const headers = await getAuthHeader();
+
+const res = await fetch("/api/claim-daily", {
+  method: "POST",
+  headers,
+});
+
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Errore claim");
 
@@ -82,7 +97,13 @@ export default function HomePage() {
     setMessage("");
     setLastPull(null);
     try {
-      const res = await fetch("/api/open-pack", { method: "POST" });
+      const headers = await getAuthHeader();
+
+const res = await fetch("/api/open-pack", {
+  method: "POST",
+  headers,
+});
+
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Errore apertura pacchetto");
 
