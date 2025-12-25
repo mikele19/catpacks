@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
-const items = [
+const tabs = [
   { label: "Home", path: "/" },
   { label: "Collezione", path: "/collection" },
   { label: "Profilo", path: "/profile" },
@@ -13,23 +14,35 @@ export default function BottomNav() {
   const router = useRouter();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur border-t border-white/10">
-      <div className="mx-auto max-w-md grid grid-cols-3">
-        {items.map((it) => {
-          const active = pathname === it.path;
-          return (
-            <button
-              key={it.path}
-              onClick={() => router.push(it.path)}
-              className={`py-3 text-sm font-extrabold ${
-                active ? "text-white" : "text-white/50"
-              }`}
-            >
-              {it.label}
-              {active && <div className="mx-auto mt-1 h-1 w-8 rounded-full bg-blue-500" />}
-            </button>
-          );
-        })}
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4">
+      <div className="mx-auto max-w-md rounded-[24px] bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.55)]">
+        <div className="relative grid grid-cols-3">
+          {tabs.map((t) => {
+            const active = pathname === t.path;
+            return (
+              <button
+                key={t.path}
+                onClick={() => router.push(t.path)}
+                className="relative py-4"
+              >
+                <div
+                  className={`text-[12px] font-extrabold tracking-wide ${
+                    active ? "text-white" : "text-white/50"
+                  }`}
+                >
+                  {t.label}
+                </div>
+
+                {active && (
+                  <motion.div
+                    layoutId="tab"
+                    className="absolute left-1/2 -translate-x-1/2 bottom-2 h-1 w-10 rounded-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

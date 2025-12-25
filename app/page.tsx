@@ -1,76 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import BottomNav from "@/app/components/BottomNav";
-import { motion, AnimatePresence } from "framer-motion";
+import PackArt from "@/app/components/PackArt";
+import { AnimatePresence, motion } from "framer-motion";
 
 type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
+type CatResult = { name: string; rarity: Rarity; image_url: string };
 
-type CatResult = {
-  name: string;
-  rarity: Rarity;
-  image_url: string;
-};
+const tapsNeeded = 12;
+const packCost = 10;
 
-function rarityGrad(r: Rarity) {
+function rarityFrame(r: Rarity) {
   switch (r) {
     case "common":
-      return "from-zinc-900 via-black to-zinc-950";
+      return "from-white/20 to-white/5";
     case "rare":
-      return "from-blue-900 via-black to-slate-950";
+      return "from-blue-400/35 to-blue-500/10";
     case "epic":
-      return "from-purple-900 via-black to-slate-950";
+      return "from-purple-400/35 to-purple-500/10";
     case "legendary":
-      return "from-yellow-900 via-black to-slate-950";
+      return "from-yellow-300/40 to-yellow-500/10";
     case "mythic":
-      return "from-rose-900 via-black to-fuchsia-950";
+      return "from-fuchsia-400/40 to-rose-500/10";
   }
 }
 
-function rarityGlow(r: Rarity) {
-  switch (r) {
-    case "common":
-      return "bg-white/10";
-    case "rare":
-      return "bg-blue-500/20";
-    case "epic":
-      return "bg-purple-500/20";
-    case "legendary":
-      return "bg-yellow-400/20";
-    case "mythic":
-      return "bg-rose-500/20";
-  }
-}
-
-// piccola vibrazione (mobile)
 function vibrate(ms: number) {
   if (typeof window !== "undefined" && "vibrate" in navigator) {
     // @ts-ignore
     navigator.vibrate(ms);
-  }
-}
-
-// beep veloce (senza file audio)
-function beep() {
-  try {
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    const ctx = new AudioCtx();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = "triangle";
-    o.frequency.value = 880;
-    g.gain.value = 0.03;
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.start();
-    setTimeout(() => {
-      o.stop();
-      ctx.close();
-    }, 80);
-  } catch {
-    // ignore
   }
 }
 
@@ -81,36 +42,32 @@ export default function Home() {
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const packCost = 10;
-
-  // flow
   const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState<"idle" | "charging" | "opening" | "reveal">("idle");
-
-  // tap-to-open
-  const tapsNeeded = 12;
+  const [stage, setStage] = useState<"idle" | "charging" | "opening" | "reveal">(
+    "idle"
+  );
   const [taps, setTaps] = useState(0);
-
-  // result
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
-  const [rarityBg, setRarityBg] = useState<Rarity>("common");
 
-  // particles
-  const [burstKey, setBurstKey] = useState(0);
+  const initials = useMemo(
+    () => (email ? email.slice(0, 2).toUpperCase() : "ME"),
+    [email]
+  );
 
-  const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
+  const progress = Math.round((taps / tapsNeeded) * 100);
 
   const getAuthHeader = async () => {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
+    if (!token) throw new Error("Sessione non valida. Rifai login.");
     return { Authorization: `Bearer ${token}` };
   };
 
   const loadProfile = async () => {
     setLoading(true);
+
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-
     if (!user) {
       router.push("/login");
       return;
@@ -139,78 +96,42 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const claimDaily = async () => {
-    setBusy(true);
-    try {
-      const headers = await getAuthHeader();
-      const res = await fetch("/api/claim-daily", { method: "POST", headers });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Errore claim");
-      setCredits(json.credits);
-      vibrate(20);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // chiama davvero l’API e prepara reveal
   const doOpenPack = async () => {
     const headers = await getAuthHeader();
     const res = await fetch("/api/open-pack", { method: "POST", headers });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Errore apertura pacchetto");
+    if (!res.ok) throw new Error(json.error || "Errore apertura");
 
     setCredits(json.credits);
     setLastCat(json.cat);
-    setRarityBg(json.cat.rarity as Rarity);
   };
 
-  // start tap mode
-  const startTapOpen = async () => {
+  const start = () => {
     if (busy) return;
     setBusy(true);
     setLastCat(null);
     setTaps(0);
     setStage("charging");
-    setRarityBg("common");
-    vibrate(15);
-  };
-
-  // handle each tap
-  const onTapPack = async () => {
-    if (stage !== "charging") return;
-
-    setTaps((prev) => {
-      const next = Math.min(tapsNeeded, prev + 1);
-      return next;
-    });
-
     vibrate(10);
-    beep();
-
-    // se arriva al massimo, apri
-    // NB: usiamo ref per leggere valore aggiornato dopo setState
-    // quindi facciamo check con un timeout micro
-    setTimeout(async () => {
-      // calcolo “taps” aggiornato leggendo dal DOM state tramite funzione:
-      // (in pratica, se taps era a tapsNeeded-1, ora siamo al massimo)
-      // ci basiamo su condizione “taps + 1 >= tapsNeeded” usando la variabile chiusa:
-    }, 0);
   };
 
-  // quando taps cambia, se raggiunge soglia -> opening
+  const tap = () => {
+    if (stage !== "charging") return;
+    setTaps((t) => Math.min(tapsNeeded, t + 1));
+    vibrate(8);
+  };
+
   useEffect(() => {
-    const run = async () => {
+    (async () => {
       if (stage !== "charging") return;
       if (taps < tapsNeeded) return;
 
       setStage("opening");
-      setBurstKey((k) => k + 1);
+      vibrate(25);
 
       try {
         await doOpenPack();
-        // mini attesa per effetto
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 650));
         setStage("reveal");
         vibrate(40);
       } catch {
@@ -218,19 +139,14 @@ export default function Home() {
       } finally {
         setBusy(false);
       }
-    };
-    run();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taps, stage]);
 
-  const skipToReveal = async () => {
-    if (busy) return;
-    if (stage === "reveal") return;
-
-    setBusy(true);
+  const skip = async () => {
+    if (stage === "reveal" || busy) return;
     setStage("opening");
-    setBurstKey((k) => k + 1);
-
+    setBusy(true);
     try {
       await doOpenPack();
       setStage("reveal");
@@ -246,7 +162,7 @@ export default function Home() {
     setStage("idle");
     setTaps(0);
     setLastCat(null);
-    setRarityBg("common");
+    setBusy(false);
   };
 
   const logout = async () => {
@@ -254,22 +170,14 @@ export default function Home() {
     router.push("/login");
   };
 
-  const progress = Math.round((taps / tapsNeeded) * 100);
-
-  // particelle “semplici” (10 pallini che esplodono)
   const particles = useMemo(() => {
-    const count = 10;
+    const count = 14;
     return Array.from({ length: count }).map((_, i) => {
-      const angle = (Math.PI * 2 * i) / count;
-      const dist = 120 + Math.random() * 40;
-      return {
-        id: i,
-        x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist,
-        s: 0.8 + Math.random() * 0.8,
-      };
+      const a = (Math.PI * 2 * i) / count;
+      const d = 130 + Math.random() * 40;
+      return { id: i, x: Math.cos(a) * d, y: Math.sin(a) * d, s: 0.8 + Math.random() * 1.2 };
     });
-  }, [burstKey]);
+  }, [lastCat?.rarity]);
 
   if (loading) {
     return (
@@ -280,213 +188,194 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen pb-20 text-white bg-gradient-to-b ${rarityGrad(rarityBg)}`}>
-      {/* TOP BAR */}
-      <div className="px-5 pt-5 flex items-center justify-between">
-        <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-3 py-2 border border-white/10">
-          <div className="h-7 w-7 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center">
-            🪙
+    <div className="min-h-screen pb-28 text-white bg-black relative overflow-hidden">
+      {/* background blobs */}
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[520px] w-[520px] rounded-full bg-blue-500/10 blur-[70px]" />
+      <div className="absolute -bottom-52 right-0 h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[80px]" />
+
+      {/* header */}
+      <div className="relative px-5 pt-5 max-w-md mx-auto">
+        <div className="flex items-center justify-between">
+          {/* coins chip */}
+          <div className="rounded-2xl px-3 py-2 bg-white/6 border border-white/10 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-xl bg-gradient-to-b from-yellow-200/30 to-yellow-500/10 border border-yellow-300/20" />
+              <div className="font-extrabold">{credits}</div>
+            </div>
           </div>
-          <div className="font-extrabold">{credits}</div>
+
+          {/* avatar */}
+          <button
+            onClick={() => router.push("/profile")}
+            className="rounded-2xl px-3 py-2 bg-white/6 border border-white/10 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/35 to-fuchsia-500/20 border border-white/10 flex items-center justify-center font-black">
+                {initials}
+              </div>
+              <div className="text-xs text-white/70 font-bold">Profilo</div>
+            </div>
+          </button>
         </div>
 
-        <button
-          onClick={() => router.push("/profile")}
-          className="flex items-center gap-2 rounded-2xl bg-white/5 px-3 py-2 border border-white/10"
-        >
-          <div className="h-8 w-8 rounded-2xl bg-blue-500/30 border border-blue-500/30 flex items-center justify-center font-extrabold">
-            {initials}
+        <div className="mt-8">
+          <div className="text-3xl font-black tracking-tight">CatPacks</div>
+          <div className="text-sm text-white/65 mt-2">
+            Tocca per caricare • costo pack <span className="font-bold text-white/85">{packCost}</span>
           </div>
-          <div className="text-xs opacity-80">Profilo</div>
-        </button>
-      </div>
+        </div>
 
-      {/* CONTENT */}
-      <div className="px-5 mt-8 max-w-md mx-auto">
-        <h1 className="text-2xl font-extrabold">CatPacks</h1>
-        <p className="text-sm opacity-70 mt-1">
-          Tocca la bustina per aprirla. Pack: {packCost} crediti.
-        </p>
+        {/* main card */}
+        <div className="mt-6 rounded-[28px] bg-white/6 border border-white/10 backdrop-blur-2xl shadow-[0_26px_90px_rgba(0,0,0,0.55)] p-5">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-white/60 font-semibold tracking-wider">
+              OPEN PACK
+            </div>
 
-        <div className="mt-5 grid gap-3">
-          <button
-            disabled={busy}
-            onClick={claimDaily}
-            className="rounded-2xl bg-green-500 px-4 py-3 font-extrabold text-black disabled:opacity-40"
-          >
-            Riscatta giornalieri (+20)
-          </button>
+            {stage !== "idle" && stage !== "reveal" && (
+              <button
+                onClick={skip}
+                className="text-xs font-bold text-white/70 hover:text-white"
+              >
+                Skip
+              </button>
+            )}
+          </div>
 
-          {stage === "idle" ? (
-            <button
-              disabled={busy}
-              onClick={startTapOpen}
-              className="rounded-2xl bg-blue-500 px-4 py-3 font-extrabold text-white disabled:opacity-40"
-            >
-              Inizia apertura (tocca per aprire)
-            </button>
-          ) : (
-            <button
-              disabled={busy}
-              onClick={skipToReveal}
-              className="rounded-2xl border border-white/15 px-4 py-3 font-extrabold text-white/90"
-            >
-              Skip animazione
-            </button>
+          {/* progress */}
+          {stage === "charging" && (
+            <div className="mt-3">
+              <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.12 }}
+                />
+              </div>
+              <div className="mt-2 text-[11px] text-white/55">
+                Tocchi: {taps}/{tapsNeeded}
+              </div>
+            </div>
           )}
 
-          <button
-            onClick={logout}
-            className="rounded-2xl border border-white/15 px-4 py-3 font-extrabold text-white/90"
-          >
-            Logout
-          </button>
-        </div>
-
-        {/* PACK ZONE */}
-        <div className="mt-8">
-          <div className="rounded-3xl bg-white/5 border border-white/10 p-5">
-            <div className="flex items-center justify-between">
-              <div className="text-xs opacity-70">Spacchettamento</div>
-              {stage === "charging" && (
-                <div className="text-xs font-extrabold opacity-80">{progress}%</div>
+          {/* stage zone */}
+          <div className="mt-4 h-[340px] flex items-center justify-center relative overflow-hidden rounded-[22px]">
+            {/* flash */}
+            <AnimatePresence>
+              {stage === "opening" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0] }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.7 }}
+                  className="absolute inset-0 bg-white"
+                />
               )}
-            </div>
+            </AnimatePresence>
 
-            {/* progress bar */}
-            {stage === "charging" && (
-              <div className="mt-3 h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full bg-blue-500" style={{ width: `${progress}%` }} />
-              </div>
-            )}
+            {/* particles */}
+            <AnimatePresence>
+              {stage === "opening" && (
+                <motion.div className="absolute inset-0 flex items-center justify-center">
+                  {particles.map((p) => (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, x: 0, y: 0, scale: 0.7 }}
+                      animate={{ opacity: [0, 1, 0], x: p.x, y: p.y, scale: p.s }}
+                      transition={{ duration: 0.7 }}
+                      className="h-3 w-3 rounded-full bg-white/12"
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="h-[300px] flex items-center justify-center relative overflow-hidden mt-4">
-              {/* FLASH */}
-              <AnimatePresence>
-                {stage === "opening" && (
-                  <motion.div
-                    key="flash"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: [0, 1, 0] }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.7 }}
-                    className="absolute inset-0 bg-white"
-                  />
-                )}
-              </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {stage !== "reveal" && (
+                <motion.button
+                  key="pack"
+                  onClick={stage === "idle" ? start : tap}
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="relative"
+                >
+                  <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
 
-              {/* PARTICLES */}
-              <AnimatePresence>
-                {stage === "opening" && (
-                  <motion.div key={`burst-${burstKey}`} className="absolute inset-0 flex items-center justify-center">
-                    {particles.map((p) => (
-                      <motion.div
-                        key={p.id}
-                        initial={{ opacity: 0, x: 0, y: 0, scale: 0.6 }}
-                        animate={{ opacity: [0, 1, 0], x: p.x, y: p.y, scale: p.s }}
-                        transition={{ duration: 0.7 }}
-                        className={`h-3 w-3 rounded-full ${rarityGlow(rarityBg)}`}
-                      />
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-                {/* PACK */}
-                {stage !== "reveal" && (
-                  <motion.button
-                    key="pack"
-                    onClick={onTapPack}
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: 0,
-                      rotate: stage === "charging" ? [0, -2, 2, -2, 2, 0] : 0,
-                    }}
-                    transition={{ duration: stage === "charging" ? 0.25 : 0.2 }}
-                    className="relative w-[190px] h-[240px] rounded-3xl border border-white/15 bg-gradient-to-b from-white/10 to-white/5 flex flex-col items-center justify-center"
-                  >
-                    <div className="text-6xl">📦</div>
-                    <div className="mt-3 font-extrabold">BUSTINA</div>
-                    <div className="text-xs opacity-70 mt-1">
-                      {stage === "idle"
-                        ? "Pronta"
-                        : stage === "charging"
-                        ? `Tocca (${taps}/${tapsNeeded})`
-                        : "Apertura..."}
+                  {/* hint */}
+                  {stage === "idle" && (
+                    <div className="mt-4 text-center text-sm text-white/65 font-semibold">
+                      Tocca la bustina per iniziare
                     </div>
+                  )}
+                  {stage === "charging" && (
+                    <div className="mt-4 text-center text-sm text-white/65 font-semibold">
+                      Tocca ancora…
+                    </div>
+                  )}
+                </motion.button>
+              )}
 
-                    {stage === "charging" && (
-                      <div className="mt-4 text-[11px] opacity-70">
-                        Tocca ripetutamente per aprire
+              {stage === "reveal" && lastCat && (
+                <motion.div
+                  key="reveal"
+                  initial={{ opacity: 0, scale: 0.92, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="w-full"
+                >
+                  <div className={`rounded-[26px] p-[2px] bg-gradient-to-br ${rarityFrame(lastCat.rarity)}`}>
+                    <div className="rounded-[26px] bg-black/70 border border-white/10 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="font-black text-lg">{lastCat.name}</div>
+                        <div className="text-[11px] uppercase tracking-[0.25em] text-white/70 font-bold">
+                          {lastCat.rarity}
+                        </div>
                       </div>
-                    )}
 
-                    {/* hint */}
-                    {stage === "idle" && (
-                      <div className="absolute -bottom-10 text-xs opacity-60">
-                        Premi “Inizia apertura”
+                      <div className="mt-4 flex items-center justify-center">
+                        <motion.img
+                          src={lastCat.image_url}
+                          alt={lastCat.name}
+                          className="h-52 w-52 rounded-[26px] shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
+                          initial={{ scale: 0.9 }}
+                          animate={{ scale: [0.9, 1.08, 1] }}
+                          transition={{ duration: 0.55 }}
+                        />
                       </div>
-                    )}
-                  </motion.button>
-                )}
 
-                {/* REVEAL */}
-                {stage === "reveal" && lastCat && (
-                  <motion.div
-                    key="reveal"
-                    initial={{ opacity: 0, scale: 0.85, y: 14 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="w-full"
-                  >
-                    <div className={`rounded-3xl p-[2px] bg-gradient-to-br ${rarityGrad(lastCat.rarity)}`}>
-                      <div className="rounded-3xl bg-black/75 p-4 border border-white/10">
-                        <div className="flex items-center justify-between">
-                          <div className="font-extrabold">{lastCat.name}</div>
-                          <div className="text-xs uppercase tracking-wider opacity-80">
-                            {lastCat.rarity}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-center">
-                          <motion.img
-                            src={lastCat.image_url}
-                            alt={lastCat.name}
-                            className="h-44 w-44 rounded-3xl"
-                            initial={{ scale: 0.9 }}
-                            animate={{ scale: [0.9, 1.08, 1] }}
-                            transition={{ duration: 0.45 }}
-                          />
-                        </div>
-
-                        <div className="mt-4 grid gap-3">
-                          <button
-                            onClick={reset}
-                            className="w-full rounded-2xl bg-white text-black px-4 py-3 font-extrabold"
-                          >
-                            Ok
-                          </button>
-                          <button
-                            onClick={() => router.push("/collection")}
-                            className="w-full rounded-2xl border border-white/15 px-4 py-3 font-extrabold"
-                          >
-                            Vai alla collezione
-                          </button>
-                        </div>
+                      <div className="mt-4 grid gap-3">
+                        <button
+                          onClick={reset}
+                          className="w-full rounded-2xl bg-white text-black py-3 font-black"
+                        >
+                          Continua
+                        </button>
+                        <button
+                          onClick={() => router.push("/collection")}
+                          className="w-full rounded-2xl bg-white/6 border border-white/10 py-3 font-black text-white"
+                        >
+                          Vai alla collezione
+                        </button>
+                        <button
+                          onClick={logout}
+                          className="w-full rounded-2xl bg-white/4 border border-white/10 py-3 font-black text-white/80"
+                        >
+                          Logout
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-            {/* footer tips */}
-            <div className="text-xs opacity-60 mt-2">
-              Tip: se vuoi vedere subito la carta usa “Skip animazione”.
-            </div>
+          {/* footer microcopy */}
+          <div className="mt-4 text-[12px] text-white/55">
+            Pro tip: tap veloci = apertura più rapida.
           </div>
         </div>
       </div>
