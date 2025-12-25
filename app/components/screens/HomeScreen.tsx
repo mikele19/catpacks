@@ -11,18 +11,33 @@ type CatResult = { name: string; rarity: Rarity; image_url: string };
 const tapsNeeded = 12;
 const packCost = 10;
 
-function rarityFrame(r: Rarity) {
+function rarityLabel(r: Rarity) {
   switch (r) {
     case "common":
-      return "from-white/20 to-white/5";
+      return "COMMON";
     case "rare":
-      return "from-blue-400/35 to-blue-500/10";
+      return "RARE";
     case "epic":
-      return "from-purple-400/35 to-purple-500/10";
+      return "EPIC";
     case "legendary":
-      return "from-yellow-300/40 to-yellow-500/10";
+      return "LEGENDARY";
     case "mythic":
-      return "from-fuchsia-400/40 to-rose-500/10";
+      return "MYTHIC";
+  }
+}
+
+function rarityBorder(r: Rarity) {
+  switch (r) {
+    case "common":
+      return "border-white/18";
+    case "rare":
+      return "border-blue-300/30";
+    case "epic":
+      return "border-purple-300/30";
+    case "legendary":
+      return "border-yellow-200/35";
+    case "mythic":
+      return "border-fuchsia-200/35";
   }
 }
 
@@ -34,14 +49,6 @@ function vibrate(ms: number) {
 }
 
 export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
-    {!lowPerfMode && (
-  <>
-    <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full bg-blue-500/8 blur-[35px]" />
-    <div className="absolute -bottom-52 right-0 h-[460px] w-[460px] rounded-full bg-fuchsia-500/8 blur-[40px]" />
-
-  </>
-)}
-
   const [email, setEmail] = useState("");
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -66,7 +73,6 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
 
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-
     if (!user) {
       setLoading(false);
       return;
@@ -143,9 +149,9 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
 
       try {
         await doOpenPack();
-        await new Promise((r) => setTimeout(r, 650));
+        await new Promise((r) => setTimeout(r, 450)); // più snello
         setStage("reveal");
-        vibrate(40);
+        vibrate(35);
       } catch {
         setStage("idle");
       } finally {
@@ -161,7 +167,7 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
     try {
       await doOpenPack();
       setStage("reveal");
-      vibrate(35);
+      vibrate(30);
     } catch {
       setStage("idle");
     } finally {
@@ -176,38 +182,33 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
     setBusy(false);
   };
 
-  const particles = useMemo(() => {
-    const count = 14;
-    return Array.from({ length: count }).map((_, i) => {
-      const a = (Math.PI * 2 * i) / count;
-      const d = 130 + Math.random() * 40;
-      return { id: i, x: Math.cos(a) * d, y: Math.sin(a) * d, s: 0.8 + Math.random() * 1.2 };
-    });
-  }, [lastCat?.rarity]);
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen text-white flex items-center justify-center">
         Caricamento…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen text-white bg-black relative overflow-hidden">
-      <div className="relative px-5 pt-5 max-w-md mx-auto pb-28">
-        {/* header */}
+    <div className="min-h-screen text-white relative">
+      {/* niente blob blur: leggero */}
+      <div className="px-5 pt-5 max-w-md mx-auto pb-28">
+        {/* Header sketch */}
         <div className="flex items-center justify-between">
-          <div className={`rounded-2xl px-3 py-2 bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-xl"} shadow-[0_12px_40px_rgba(0,0,0,0.45)`}>
+          <div className="sketch-chip px-3 py-2">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-xl bg-gradient-to-b from-yellow-200/30 to-yellow-500/10 border border-yellow-300/20" />
-              <div className="font-extrabold">{credits}</div>
+              <div className="h-8 w-8 rounded-2xl border-2 border-white/20 bg-white/5" />
+              <div>
+                <div className="text-[11px] text-white/60 font-semibold">Coins</div>
+                <div className="font-black text-lg">{credits}</div>
+              </div>
             </div>
           </div>
 
-          <div className={`rounded-2xl px-3 py-2 bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-xl"} shadow-[0_12px_40px_rgba(0,0,0,0.45)`}>
+          <div className="sketch-chip px-3 py-2">
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/35 to-fuchsia-500/20 border border-white/10 flex items-center justify-center font-black">
+              <div className="h-10 w-10 rounded-2xl border-2 border-white/20 bg-white/5 flex items-center justify-center font-black">
                 {initials}
               </div>
               <div className="text-xs text-white/70 font-bold">Player</div>
@@ -215,84 +216,61 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
           </div>
         </div>
 
-        <div className="mt-8">
-          <div className="text-3xl font-black tracking-tight">CatPacks</div>
+        <div className="mt-7">
+          <div className="text-3xl font-black sketch-title">CatPacks</div>
           <div className="text-sm text-white/65 mt-2">
-            Tocca per caricare • costo pack <span className="font-bold text-white/85">{packCost}</span>
+            Tap-to-open • pack cost <span className="font-black text-white/85">{packCost}</span>
           </div>
         </div>
 
-        {/* actions (minimal) */}
-        <div className="mt-5 flex gap-2">
-          <button
-            onClick={claimDaily}
-            disabled={busy}
-            className="flex-1 rounded-2xl bg-white text-black py-3 font-black disabled:opacity-40"
-          >
+        {/* Actions (sketch buttons) */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button onClick={claimDaily} disabled={busy} className="sketch-btn-solid py-3 font-black disabled:opacity-40">
             Daily +20
           </button>
-          <button
-            onClick={stage === "idle" ? start : skip}
-            disabled={busy}
-            className="flex-1 rounded-2xl bg-white/6 border border-white/10 py-3 font-black text-white disabled:opacity-40"
-          >
-            {stage === "idle" ? "Apri pack" : "Skip"}
+
+          <button onClick={stage === "idle" ? start : skip} disabled={busy} className="sketch-btn py-3 font-black disabled:opacity-40">
+            {stage === "idle" ? "Start" : "Skip"}
           </button>
         </div>
 
-        {/* main card */}
-        <div className={`mt-6 rounded-[28px] bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-2xl"} shadow-[0_26px_90px_rgba(0,0,0,0.55)] p-5`}>
+        {/* Main pack card */}
+        <div className="mt-5 sketch-card p-5">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-white/60 font-semibold tracking-wider">
-              OPEN PACK
-            </div>
+            <div className="text-[11px] text-white/60 font-semibold tracking-[0.25em]">OPEN PACK</div>
+
             {stage === "charging" && (
               <div className="text-xs font-black text-white/70">{progress}%</div>
             )}
           </div>
 
+          {/* progress (light) */}
           {stage === "charging" && (
             <div className="mt-3">
-              <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.12 }}
+              <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden border border-white/10">
+                <div
+                  className="h-full bg-white/80"
+                  style={{ width: `${progress}%` }}
                 />
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                Tocchi: {taps}/{tapsNeeded}
+                Tap: {taps}/{tapsNeeded}
               </div>
             </div>
           )}
 
-          <div className="mt-4 h-[360px] flex items-center justify-center relative overflow-hidden rounded-[22px]">
+          {/* stage area */}
+          <div className="mt-4 h-[360px] flex items-center justify-center relative overflow-hidden rounded-[22px] border-2 border-white/10 bg-black/30">
+            {/* flash leggero */}
             <AnimatePresence>
-              {stage === "opening" && (
+              {stage === "opening" && !lowPerfMode && (
                 <motion.div
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 0] }}
+                  animate={{ opacity: [0, 0.8, 0] }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.7 }}
+                  transition={{ duration: 0.45 }}
                   className="absolute inset-0 bg-white"
                 />
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {stage === "opening" && (
-                <motion.div className="absolute inset-0 flex items-center justify-center">
-                  {particles.map((p) => (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, x: 0, y: 0, scale: 0.7 }}
-                      animate={{ opacity: [0, 1, 0], x: p.x, y: p.y, scale: p.s }}
-                      transition={{ duration: 0.7 }}
-                      className="h-3 w-3 rounded-full bg-white/12"
-                    />
-                  ))}
-                </motion.div>
               )}
             </AnimatePresence>
 
@@ -301,19 +279,26 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
                 <motion.button
                   key="pack"
                   onClick={stage === "idle" ? start : tap}
-                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: -10 }}
-                  transition={{ duration: 0.25 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                  transition={{ duration: 0.18 }}
                   className="relative"
                 >
-                  <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
+                  <PackArt
+                    state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"}
+                  />
+
                   <div className="mt-4 text-center text-sm text-white/65 font-semibold">
                     {stage === "idle"
-                      ? "Tocca la bustina per iniziare"
+                      ? "Tocca la bustina"
                       : stage === "charging"
-                      ? "Tocca ancora…"
-                      : "Apertura…"}
+                      ? "Ancora…"
+                      : "Opening…"}
+                  </div>
+
+                  <div className="mt-1 text-center text-[11px] text-white/45">
+                    (Tap ripetuti per aprire)
                   </div>
                 </motion.button>
               )}
@@ -321,44 +306,45 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
               {stage === "reveal" && lastCat && (
                 <motion.div
                   key="reveal"
-                  initial={{ opacity: 0, scale: 0.92, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="w-full"
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.18 }}
+                  className="w-full px-2"
                 >
-                  <div className={`rounded-[26px] p-[2px] bg-gradient-to-br ${rarityFrame(lastCat.rarity)}`}>
-                    <div className="rounded-[26px] bg-black/70 border border-white/10 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="font-black text-lg">{lastCat.name}</div>
-                        <div className="text-[11px] uppercase tracking-[0.25em] text-white/70 font-bold">
-                          {lastCat.rarity}
-                        </div>
+                  <div className={`sketch-card p-4 border-2 ${rarityBorder(lastCat.rarity)}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="font-black text-lg">{lastCat.name}</div>
+                      <div className="text-[11px] font-black tracking-[0.25em] text-white/70">
+                        {rarityLabel(lastCat.rarity)}
                       </div>
+                    </div>
 
-                      <div className="mt-4 flex items-center justify-center">
-                        <motion.img
-                          src={lastCat.image_url}
-                          alt={lastCat.name}
-                          className="h-52 w-52 rounded-[26px] shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-                          initial={{ scale: 0.9 }}
-                          animate={{ scale: [0.9, 1.08, 1] }}
-                          transition={{ duration: 0.55 }}
-                        />
-                      </div>
+                    <div className="mt-4 flex items-center justify-center">
+                      <motion.img
+                        src={lastCat.image_url}
+                        alt={lastCat.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-52 w-52 rounded-[22px] border-2 border-white/10"
+                        initial={{ scale: 0.92 }}
+                        animate={{ scale: [0.92, 1.02, 1] }}
+                        transition={{ duration: 0.35 }}
+                      />
+                    </div>
 
-                      <div className="mt-4 grid gap-3">
-                        <button
-                          onClick={reset}
-                          className="w-full rounded-2xl bg-white text-black py-3 font-black"
-                        >
-                          Continua
-                        </button>
-                      </div>
+                    <div className="mt-4">
+                      <button onClick={reset} className="sketch-btn-solid w-full py-3 font-black">
+                        Continua
+                      </button>
                     </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+
+          <div className="mt-3 text-[12px] text-white/55">
+            Tip: più tap = più veloce. (UI sketch: niente blur → più fluida)
           </div>
         </div>
       </div>

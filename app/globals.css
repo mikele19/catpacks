@@ -19,8 +19,56 @@
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Paper background (dark) */
+html, body {
+  background: url("/ui/paper-dark.svg") repeat;
+  background-size: 260px 260px;
+}
+
+/* Sketch UI primitives (NO backdrop-filter, NO blur) */
+.sketch-card {
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 22px;
+  background: rgba(0,0,0,.58);
+  box-shadow: 3px 6px 0 rgba(0,0,0,.55);
+}
+
+.sketch-chip {
+  border: 2px solid rgba(255,255,255,.16);
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  box-shadow: 2px 4px 0 rgba(0,0,0,.5);
+}
+
+.sketch-btn {
+  border: 2px solid rgba(255,255,255,.22);
+  border-radius: 18px;
+  background: rgba(255,255,255,.08);
+  box-shadow: 2px 4px 0 rgba(0,0,0,.55);
+  transform: rotate(-0.25deg);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.sketch-btn:active {
+  transform: translateY(1px) rotate(0deg);
+  box-shadow: 1px 2px 0 rgba(0,0,0,.4);
+}
+
+.sketch-btn-solid {
+  border: 2px solid rgba(255,255,255,.20);
+  border-radius: 18px;
+  background: rgba(255,255,255,.92);
+  color: #090a0f;
+  box-shadow: 2px 4px 0 rgba(0,0,0,.55);
+  transform: rotate(0.2deg);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.sketch-btn-solid:active {
+  transform: translateY(1px) rotate(0deg);
+  box-shadow: 1px 2px 0 rgba(0,0,0,.4);
+}
+
+/* Sketch text look */
+.sketch-title {
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 0 rgba(0,0,0,.55);
 }
