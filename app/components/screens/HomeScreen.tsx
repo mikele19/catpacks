@@ -8,38 +8,8 @@ import PackArt from "@/app/components/PackArt";
 type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
 type CatResult = { name: string; rarity: Rarity; image_url: string };
 
-const tapsNeeded = 12;
+const tapsNeeded = 10;
 const packCost = 10;
-
-function rarityLabel(r: Rarity) {
-  switch (r) {
-    case "common":
-      return "COMMON";
-    case "rare":
-      return "RARE";
-    case "epic":
-      return "EPIC";
-    case "legendary":
-      return "LEGENDARY";
-    case "mythic":
-      return "MYTHIC";
-  }
-}
-
-function rarityBorder(r: Rarity) {
-  switch (r) {
-    case "common":
-      return "border-white/18";
-    case "rare":
-      return "border-blue-300/30";
-    case "epic":
-      return "border-purple-300/30";
-    case "legendary":
-      return "border-yellow-200/35";
-    case "mythic":
-      return "border-fuchsia-200/35";
-  }
-}
 
 function vibrate(ms: number) {
   if (typeof window !== "undefined" && "vibrate" in navigator) {
@@ -70,13 +40,9 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
 
   const loadProfile = async () => {
     setLoading(true);
-
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    if (!user) return setLoading(false);
 
     setEmail(user.email ?? "");
 
@@ -119,7 +85,6 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
     const res = await fetch("/api/open-pack", { method: "POST", headers });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Errore apertura");
-
     setCredits(json.credits);
     setLastCat(json.cat);
   };
@@ -149,9 +114,9 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
 
       try {
         await doOpenPack();
-        await new Promise((r) => setTimeout(r, 450)); // più snello
+        await new Promise((r) => setTimeout(r, 320));
         setStage("reveal");
-        vibrate(35);
+        vibrate(30);
       } catch {
         setStage("idle");
       } finally {
@@ -167,7 +132,7 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
     try {
       await doOpenPack();
       setStage("reveal");
-      vibrate(30);
+      vibrate(25);
     } catch {
       setStage("idle");
     } finally {
@@ -183,92 +148,61 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen text-white flex items-center justify-center">
-        Caricamento…
-      </div>
-    );
+    return <div className="min-h-screen text-white flex items-center justify-center">Caricamento…</div>;
   }
 
   return (
-    <div className="min-h-screen text-white relative">
-      {/* niente blob blur: leggero */}
+    <div className="min-h-screen text-white">
       <div className="px-5 pt-5 max-w-md mx-auto pb-28">
-        {/* Header sketch */}
+        {/* Top bar minimal */}
         <div className="flex items-center justify-between">
-          <div className="sketch-chip px-3 py-2">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-2xl border-2 border-white/20 bg-white/5" />
-              <div>
-                <div className="text-[11px] text-white/60 font-semibold">Coins</div>
-                <div className="font-black text-lg">{credits}</div>
-              </div>
-            </div>
+          <div className="sketch-chip px-3 py-2 flex items-center gap-2">
+            <img src="/ui/coin.svg" alt="Coin" className="h-6 w-6" />
+            <div className="font-black text-lg leading-none">{credits}</div>
           </div>
 
-          <div className="sketch-chip px-3 py-2">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-2xl border-2 border-white/20 bg-white/5 flex items-center justify-center font-black">
-                {initials}
-              </div>
-              <div className="text-xs text-white/70 font-bold">Player</div>
+          <div className="sketch-chip px-3 py-2 flex items-center gap-2">
+            <div className="h-9 w-9 rounded-2xl border-2 border-white/20 bg-white/5 flex items-center justify-center font-black">
+              {initials}
             </div>
+            <div className="text-xs text-white/70 font-bold">Player</div>
           </div>
         </div>
 
+        {/* Title */}
         <div className="mt-7">
-          <div className="text-3xl font-black sketch-title">CatPacks</div>
-          <div className="text-sm text-white/65 mt-2">
-            Tap-to-open • pack cost <span className="font-black text-white/85">{packCost}</span>
+          <div className="text-4xl font-black sketch-title">CatPacks</div>
+          <div className="text-sm text-white/60 mt-2">
+            Pack <span className="font-black text-white/80">{packCost}</span>
+            {stage === "charging" && <span className="ml-2 text-white/50">• {progress}%</span>}
           </div>
         </div>
 
-        {/* Actions (sketch buttons) */}
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <button onClick={claimDaily} disabled={busy} className="sketch-btn-solid py-3 font-black disabled:opacity-40">
+        {/* Small actions row */}
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={claimDaily} disabled={busy} className="sketch-btn-solid px-5 py-3 font-black disabled:opacity-40">
             Daily +20
           </button>
 
-          <button onClick={stage === "idle" ? start : skip} disabled={busy} className="sketch-btn py-3 font-black disabled:opacity-40">
+          <button
+            onClick={stage === "idle" ? start : skip}
+            disabled={busy}
+            className="sketch-btn flex-1 py-3 font-black disabled:opacity-40"
+          >
             {stage === "idle" ? "Start" : "Skip"}
           </button>
         </div>
 
-        {/* Main pack card */}
+        {/* Single main card */}
         <div className="mt-5 sketch-card p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-[11px] text-white/60 font-semibold tracking-[0.25em]">OPEN PACK</div>
-
-            {stage === "charging" && (
-              <div className="text-xs font-black text-white/70">{progress}%</div>
-            )}
-          </div>
-
-          {/* progress (light) */}
-          {stage === "charging" && (
-            <div className="mt-3">
-              <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden border border-white/10">
-                <div
-                  className="h-full bg-white/80"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="mt-2 text-[11px] text-white/55">
-                Tap: {taps}/{tapsNeeded}
-              </div>
-            </div>
-          )}
-
-          {/* stage area */}
-          <div className="mt-4 h-[360px] flex items-center justify-center relative overflow-hidden rounded-[22px] border-2 border-white/10 bg-black/30">
-            {/* flash leggero */}
+          <div className="h-[420px] flex items-center justify-center relative overflow-hidden rounded-[20px] border-2 border-white/10 bg-black/30">
             <AnimatePresence>
               {stage === "opening" && !lowPerfMode && (
                 <motion.div
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 0.8, 0] }}
+                  animate={{ opacity: [0, 0.65, 0] }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.45 }}
+                  transition={{ duration: 0.32 }}
                   className="absolute inset-0 bg-white"
                 />
               )}
@@ -279,26 +213,15 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
                 <motion.button
                   key="pack"
                   onClick={stage === "idle" ? start : tap}
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.985 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                  transition={{ duration: 0.18 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.985 }}
+                  transition={{ duration: 0.16 }}
                   className="relative"
                 >
-                  <PackArt
-                    state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"}
-                  />
-
+                  <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
                   <div className="mt-4 text-center text-sm text-white/65 font-semibold">
-                    {stage === "idle"
-                      ? "Tocca la bustina"
-                      : stage === "charging"
-                      ? "Ancora…"
-                      : "Opening…"}
-                  </div>
-
-                  <div className="mt-1 text-center text-[11px] text-white/45">
-                    (Tap ripetuti per aprire)
+                    {stage === "idle" ? "Tocca per aprire" : "Tocca…"}
                   </div>
                 </motion.button>
               )}
@@ -306,16 +229,16 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
               {stage === "reveal" && lastCat && (
                 <motion.div
                   key="reveal"
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.985 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ duration: 0.16 }}
                   className="w-full px-2"
                 >
-                  <div className={`sketch-card p-4 border-2 ${rarityBorder(lastCat.rarity)}`}>
+                  <div className="sketch-card p-4">
                     <div className="flex items-center justify-between">
                       <div className="font-black text-lg">{lastCat.name}</div>
-                      <div className="text-[11px] font-black tracking-[0.25em] text-white/70">
-                        {rarityLabel(lastCat.rarity)}
+                      <div className="text-[11px] font-black tracking-[0.22em] text-white/70">
+                        {lastCat.rarity.toUpperCase()}
                       </div>
                     </div>
 
@@ -325,10 +248,10 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
                         alt={lastCat.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-52 w-52 rounded-[22px] border-2 border-white/10"
-                        initial={{ scale: 0.92 }}
-                        animate={{ scale: [0.92, 1.02, 1] }}
-                        transition={{ duration: 0.35 }}
+                        className="h-56 w-56 rounded-[22px] border-2 border-white/10"
+                        initial={{ scale: 0.93 }}
+                        animate={{ scale: [0.93, 1.03, 1] }}
+                        transition={{ duration: 0.28 }}
                       />
                     </div>
 
@@ -341,10 +264,6 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          <div className="mt-3 text-[12px] text-white/55">
-            Tip: più tap = più veloce. (UI sketch: niente blur → più fluida)
           </div>
         </div>
       </div>
