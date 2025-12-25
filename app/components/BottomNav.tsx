@@ -1,28 +1,31 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import type { TabKey } from "./SwipeTabs";
 
-const tabs = [
-  { label: "Home", path: "/" },
-  { label: "Collezione", path: "/collection" },
-  { label: "Profilo", path: "/profile" },
+const tabs: { label: string; key: TabKey }[] = [
+  { label: "Home", key: "home" },
+  { label: "Collezione", key: "collection" },
+  { label: "Profilo", key: "profile" },
 ];
 
-export default function BottomNav() {
-  const pathname = usePathname();
-  const router = useRouter();
-
+export default function BottomNav({
+  tab,
+  setTab,
+}: {
+  tab: TabKey;
+  setTab: (t: TabKey) => void;
+}) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4">
       <div className="mx-auto max-w-md rounded-[24px] bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.55)]">
         <div className="relative grid grid-cols-3">
           {tabs.map((t) => {
-            const active = pathname === t.path;
+            const active = tab === t.key;
             return (
               <button
-                key={t.path}
-                onClick={() => router.push(t.path)}
+                key={t.key}
+                onClick={() => setTab(t.key)}
                 className="relative py-4"
               >
                 <div
