@@ -40,6 +40,8 @@ export default function SwipeTabs({
   const onDragEnd = (_: any, info: any) => {
     if (!width) return;
 
+    const [dragging, setDragging] = useState(false);
+
     const offset = info.offset.x; // quanto hai trascinato
     const velocity = info.velocity.x;
 
@@ -67,14 +69,20 @@ export default function SwipeTabs({
         style={{ x }}
         drag="x"
         dragConstraints={{ left: -2 * width, right: 0 }}
-        dragElastic={0.08}
+        dragElastic={0.02}
         onDragEnd={onDragEnd}
+        
       >
-        {children.map((child, i) => (
-          <div key={i} className="min-h-screen w-screen flex-shrink-0">
-            {child}
-          </div>
-        ))}
+        {children.map((child, i) => {
+  const active = i === index;
+  return (
+    <div key={i} className="min-h-screen w-screen flex-shrink-0">
+      {/* Render completo solo se attiva o vicina */}
+      {Math.abs(i - index) <= 1 ? child : <div className="min-h-screen" />}
+    </div>
+  );
+})}
+
       </motion.div>
     </div>
   );

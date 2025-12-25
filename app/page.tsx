@@ -40,7 +40,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-black text-white">
       <SwipeTabs tab={tab} setTab={setTab}>
         {[
-          <HomeScreen key="home" />,
+          <HomeScreen key="home"  />,
           <CollectionScreen key="collection" />,
           <ProfileScreen key="profile" />,
         ]}
