@@ -171,7 +171,7 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
 
         {/* Title */}
         <div className="mt-7">
-          <div className="text-4xl font-black sketch-title">CatPacks</div>
+          <div className="text-4xl font-black sketch-title">CatPacks v999</div>
           <div className="text-sm text-white/60 mt-2">
             Pack <span className="font-black text-white/80">{packCost}</span>
             {stage === "charging" && <span className="ml-2 text-white/50">• {progress}%</span>}
