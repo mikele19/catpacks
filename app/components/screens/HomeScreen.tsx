@@ -101,7 +101,7 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
   const tap = () => {
     if (stage !== "charging") return;
     setTaps((t) => Math.min(tapsNeeded, t + 1));
-    vibrate(8);
+    vibrate(6);
   };
 
   useEffect(() => {
@@ -110,13 +110,13 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
       if (taps < tapsNeeded) return;
 
       setStage("opening");
-      vibrate(25);
+      vibrate(20);
 
       try {
         await doOpenPack();
-        await new Promise((r) => setTimeout(r, 320));
+        await new Promise((r) => setTimeout(r, 220));
         setStage("reveal");
-        vibrate(30);
+        vibrate(25);
       } catch {
         setStage("idle");
       } finally {
@@ -132,7 +132,7 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
     try {
       await doOpenPack();
       setStage("reveal");
-      vibrate(25);
+      vibrate(20);
     } catch {
       setStage("idle");
     } finally {
@@ -148,124 +148,122 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
   };
 
   if (loading) {
-    return <div className="min-h-screen text-white flex items-center justify-center">Caricamento…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-black/70">Caricamento…</div>;
   }
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-black">
       <div className="px-5 pt-5 max-w-md mx-auto pb-28">
-        {/* Top bar minimal */}
+        {/* top stickers (light paper) */}
         <div className="flex items-center justify-between">
-          <div className="sketch-chip px-3 py-2 flex items-center gap-2">
-            <img src="/ui/coin.svg" alt="Coin" className="h-6 w-6" />
+          <div className="sticker px-3 py-2 flex items-center gap-2">
+            {/* se coin.svg non c’è ancora, va bene anche questa fallback */}
+            <span className="text-lg">🪙</span>
             <div className="font-black text-lg leading-none">{credits}</div>
           </div>
 
-          <div className="sketch-chip px-3 py-2 flex items-center gap-2">
-            <div className="h-9 w-9 rounded-2xl border-2 border-white/20 bg-white/5 flex items-center justify-center font-black">
+          <button className="sticker px-3 py-2 flex items-center gap-2 active:scale-[0.99] transition">
+            <div className="h-9 w-9 rounded-2xl border-2 border-black/10 bg-white/70 flex items-center justify-center font-black">
               {initials}
             </div>
-            <div className="text-xs text-white/70 font-bold">Player</div>
-          </div>
+            <div className="text-xs font-black text-black/60">Player</div>
+          </button>
         </div>
 
-        {/* Title */}
+        {/* title */}
         <div className="mt-7">
-          <div className="text-4xl font-black sketch-title">CatPacks v999</div>
-          <div className="text-sm text-white/60 mt-2">
-            Pack <span className="font-black text-white/80">{packCost}</span>
-            {stage === "charging" && <span className="ml-2 text-white/50">• {progress}%</span>}
+          <div className="text-5xl font-black leading-none tracking-tight">
+            CatPacks
+          </div>
+          <div className="mt-2 text-sm muted font-black">
+            pack <span className="text-black">{packCost}</span>
+            {stage === "charging" && <span className="ml-2">• {progress}%</span>}
           </div>
         </div>
 
-        {/* Small actions row */}
-        <div className="mt-4 flex items-center gap-3">
-          <button onClick={claimDaily} disabled={busy} className="sketch-btn-solid px-5 py-3 font-black disabled:opacity-40">
-            Daily +20
+        {/* micro actions */}
+        <div className="mt-4 flex items-center justify-between">
+          <button onClick={claimDaily} disabled={busy} className="ink-action disabled:opacity-40">
+            +20 daily
           </button>
 
           <button
             onClick={stage === "idle" ? start : skip}
             disabled={busy}
-            className="sketch-btn flex-1 py-3 font-black disabled:opacity-40"
+            className="ink-action disabled:opacity-40"
           >
-            {stage === "idle" ? "Start" : "Skip"}
+            {stage === "idle" ? "start" : "skip"}
           </button>
         </div>
 
-        {/* Single main card */}
-        <div className="mt-5 sketch-card p-5">
-          <div className="h-[420px] flex items-center justify-center relative overflow-hidden rounded-[20px] border-2 border-white/10 bg-black/30">
+        {/* Pack: NO cards, just the sticker pack */}
+        <div className="mt-8 flex flex-col items-center">
+          <div className="relative">
             <AnimatePresence>
               {stage === "opening" && !lowPerfMode && (
                 <motion.div
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 0.65, 0] }}
+                  animate={{ opacity: [0, 0.35, 0] }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.32 }}
-                  className="absolute inset-0 bg-white"
+                  transition={{ duration: 0.22 }}
+                  className="absolute inset-[-22px] rounded-[60px] bg-white"
                 />
               )}
             </AnimatePresence>
 
-            <AnimatePresence mode="wait">
-              {stage !== "reveal" && (
-                <motion.button
-                  key="pack"
-                  onClick={stage === "idle" ? start : tap}
-                  initial={{ opacity: 0, y: 10, scale: 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.985 }}
-                  transition={{ duration: 0.16 }}
-                  className="relative"
-                >
-                  <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
-                  <div className="mt-4 text-center text-sm text-white/65 font-semibold">
-                    {stage === "idle" ? "Tocca per aprire" : "Tocca…"}
-                  </div>
-                </motion.button>
-              )}
+            <motion.button
+              onClick={stage === "idle" ? start : tap}
+              disabled={busy && stage === "idle"}
+              className="pack-shadow"
+              whileTap={{ scale: 0.985, rotate: stage === "charging" ? -0.3 : 0 }}
+            >
+              <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
+            </motion.button>
+          </div>
 
-              {stage === "reveal" && lastCat && (
-                <motion.div
-                  key="reveal"
-                  initial={{ opacity: 0, y: 10, scale: 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.16 }}
-                  className="w-full px-2"
-                >
-                  <div className="sketch-card p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="font-black text-lg">{lastCat.name}</div>
-                      <div className="text-[11px] font-black tracking-[0.22em] text-white/70">
-                        {lastCat.rarity.toUpperCase()}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-center">
-                      <motion.img
-                        src={lastCat.image_url}
-                        alt={lastCat.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-56 w-56 rounded-[22px] border-2 border-white/10"
-                        initial={{ scale: 0.93 }}
-                        animate={{ scale: [0.93, 1.03, 1] }}
-                        transition={{ duration: 0.28 }}
-                      />
-                    </div>
-
-                    <div className="mt-4">
-                      <button onClick={reset} className="sketch-btn-solid w-full py-3 font-black">
-                        Continua
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="mt-4 text-sm muted font-black">
+            {stage === "idle" ? "tocca per aprire" : "tap tap tap…"}
           </div>
         </div>
+
+        {/* Reveal: one clean sticker */}
+        <AnimatePresence>
+          {stage === "reveal" && lastCat && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.99 }}
+              transition={{ duration: 0.18 }}
+              className="mt-6"
+            >
+              <div className="sticker p-4">
+                <div className="flex items-center justify-between">
+                  <div className="font-black text-lg">{lastCat.name}</div>
+                  <div className="text-[11px] font-black tracking-[0.22em] text-black/55">
+                    {lastCat.rarity.toUpperCase()}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-center">
+                  <motion.img
+                    src={lastCat.image_url}
+                    alt={lastCat.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-56 w-56 rounded-[22px] border-2 border-black/10 bg-white/60"
+                    initial={{ scale: 0.96 }}
+                    animate={{ scale: [0.96, 1.02, 1] }}
+                    transition={{ duration: 0.22 }}
+                  />
+                </div>
+
+                <button onClick={reset} className="mt-4 w-full sticker py-3 font-black active:scale-[0.99] transition">
+                  continua
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -37,22 +37,22 @@ function rarityPill(r: Rarity) {
   }
 }
 
-function rarityOutline(r: Exclude<Rarity, "all">) {
+function rarityRing(r: Exclude<Rarity, "all">) {
   switch (r) {
     case "common":
-      return "border-white/18";
+      return "border-black/12";
     case "rare":
-      return "border-blue-300/30";
+      return "border-blue-400/25";
     case "epic":
-      return "border-purple-300/30";
+      return "border-purple-400/25";
     case "legendary":
-      return "border-yellow-200/35";
+      return "border-yellow-500/25";
     case "mythic":
-      return "border-fuchsia-200/35";
+      return "border-fuchsia-500/25";
   }
 }
 
-export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
+export default function CollectionScreen() {
   const [loading, setLoading] = useState(true);
   const [cats, setCats] = useState<Cat[]>([]);
   const [ownedMap, setOwnedMap] = useState<Record<string, Owned>>({});
@@ -121,37 +121,40 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
     });
   }, [cats, query, rarity]);
 
-  const ownedCount = useMemo(() => Object.values(ownedMap).reduce((acc, o) => acc + o.count, 0), [ownedMap]);
+  const ownedCount = useMemo(
+    () => Object.values(ownedMap).reduce((acc, o) => acc + o.count, 0),
+    [ownedMap]
+  );
 
   return (
-    <div className="min-h-screen text-white pb-28">
+    <div className="min-h-screen text-black pb-28">
       <div className="px-5 pt-5 max-w-md mx-auto">
         {/* header */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-3xl font-black sketch-title">Collezione</div>
-            <div className="text-sm text-white/60 mt-2">
-              Totale carte: <span className="font-black text-white/80">{ownedCount}</span>
+            <div className="text-4xl font-black leading-none tracking-tight">Collezione</div>
+            <div className="text-sm muted font-black mt-2">
+              carte <span className="text-black">{ownedCount}</span>
             </div>
           </div>
 
-          <div className="sketch-chip px-3 py-2">
-            <div className="text-[11px] text-white/60 font-semibold">Uniche</div>
+          <div className="sticker px-3 py-2">
+            <div className="text-[11px] muted font-black">uniche</div>
             <div className="font-black text-lg">{Object.keys(ownedMap).length}</div>
           </div>
         </div>
 
-        {/* search (no blur) */}
-        <div className="mt-5 sketch-card p-0 overflow-hidden">
+        {/* search */}
+        <div className="mt-5 sticker p-0 overflow-hidden">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca un gatto..."
-            className="w-full bg-transparent px-4 py-3 outline-none text-white placeholder:text-white/35"
+            placeholder="Cerca un gatto…"
+            className="w-full bg-transparent px-4 py-3 outline-none text-black placeholder:text-black/35 font-black"
           />
         </div>
 
-        {/* rarity pills (sketch) */}
+        {/* rarity pills */}
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
           {(["all", "common", "rare", "epic", "legendary", "mythic"] as Rarity[]).map((r) => {
             const active = rarity === r;
@@ -159,8 +162,8 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
               <button
                 key={r}
                 onClick={() => setRarity(r)}
-                className={`shrink-0 px-4 py-2 text-[12px] font-extrabold border-2 rounded-full ${
-                  active ? "border-white/25 bg-white/10 text-white" : "border-white/12 bg-white/5 text-white/70"
+                className={`shrink-0 px-4 py-2 text-[12px] font-black border-2 rounded-full ${
+                  active ? "border-black/25 bg-white/70" : "border-black/12 bg-white/45 text-black/70"
                 }`}
               >
                 {rarityPill(r)}
@@ -172,9 +175,9 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
         {/* grid */}
         <div className="mt-5">
           {loading ? (
-            <div className="text-white/70">Caricamento…</div>
+            <div className="text-black/60 font-black">Caricamento…</div>
           ) : filtered.length === 0 ? (
-            <div className="text-white/60">Nessun risultato.</div>
+            <div className="text-black/55 font-black">Nessun risultato.</div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {filtered.map((c) => {
@@ -183,7 +186,7 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
 
                 return (
                   <button key={c.id} onClick={() => setSelected({ ...c, owned })} className="text-left">
-                    <div className={`sketch-card overflow-hidden border-2 ${rarityOutline(c.rarity)}`}>
+                    <div className={`sticker overflow-hidden border-2 ${rarityRing(c.rarity)}`}>
                       <div className="relative">
                         <img
                           src={c.image_url}
@@ -194,23 +197,23 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
                         />
 
                         {has && (
-                          <div className="absolute top-3 left-3 border-2 border-white/15 bg-black/60 rounded-full px-2 py-1 text-[11px] font-black">
+                          <div className="absolute top-3 left-3 sticker px-2 py-1 text-[11px] font-black">
                             x{owned.count}
                           </div>
                         )}
 
-                        <div className="absolute top-3 right-3 border-2 border-white/15 bg-black/60 rounded-full px-2 py-1 text-[10px] font-extrabold tracking-wider text-white/80">
+                        <div className="absolute top-3 right-3 sticker px-2 py-1 text-[10px] font-black tracking-wider text-black/70">
                           {c.rarity.toUpperCase()}
                         </div>
                       </div>
 
                       <div className="p-3">
                         <div className="font-black">{c.name}</div>
-                        <div className="text-xs text-white/60 mt-1">
-                          Valore: <span className="text-white/80 font-black">{c.base_value}</span>
+                        <div className="text-xs muted font-black mt-1">
+                          valore <span className="text-black">{c.base_value}</span>
                         </div>
 
-                        {!has && <div className="mt-2 text-[11px] text-white/45">Non trovata</div>}
+                        {!has && <div className="mt-2 text-[11px] muted font-black">non trovata</div>}
                       </div>
                     </div>
                   </button>
@@ -221,18 +224,18 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
         </div>
       </div>
 
-      {/* Modal (lightweight) */}
+      {/* Modal */}
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="fixed inset-0 z-[100] bg-black/70 flex items-end justify-center"
+            className="fixed inset-0 z-[100] bg-black/40 flex items-end justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelected(null)}
           >
             <motion.div
-              className="w-full max-w-md rounded-t-[28px] border-2 border-white/12 bg-black/85 p-5"
+              className="w-full max-w-md rounded-t-[28px] border-2 border-black/12 bg-white/90 p-5 shadow-[0_25px_80px_rgba(0,0,0,0.25)]"
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
@@ -241,12 +244,12 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
             >
               <div className="flex items-center justify-between">
                 <div className="font-black text-xl">{selected.name}</div>
-                <button onClick={() => setSelected(null)} className="sketch-btn px-4 py-2 font-black">
-                  Chiudi
+                <button onClick={() => setSelected(null)} className="sticker px-4 py-2 font-black">
+                  chiudi
                 </button>
               </div>
 
-              <div className={`mt-4 sketch-card overflow-hidden border-2 ${rarityOutline(selected.rarity)}`}>
+              <div className={`mt-4 sticker overflow-hidden border-2 ${rarityRing(selected.rarity)}`}>
                 <img
                   src={selected.image_url}
                   alt={selected.name}
@@ -257,22 +260,18 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="sketch-chip p-3">
-                  <div className="text-[11px] text-white/60 font-semibold">Rarità</div>
+                <div className="sticker p-3">
+                  <div className="text-[11px] muted font-black">rarità</div>
                   <div className="font-black mt-1">{selected.rarity}</div>
                 </div>
-                <div className="sketch-chip p-3">
-                  <div className="text-[11px] text-white/60 font-semibold">Valore</div>
+                <div className="sticker p-3">
+                  <div className="text-[11px] muted font-black">valore</div>
                   <div className="font-black mt-1">{selected.base_value}</div>
                 </div>
-                <div className="sketch-chip p-3">
-                  <div className="text-[11px] text-white/60 font-semibold">Possedute</div>
+                <div className="sticker p-3">
+                  <div className="text-[11px] muted font-black">poss.</div>
                   <div className="font-black mt-1">{selected.owned?.count ?? 0}</div>
                 </div>
-              </div>
-
-              <div className="mt-4 text-xs text-white/55">
-                UI sketch = zero blur = più fluida su telefono.
               </div>
             </motion.div>
           </motion.div>

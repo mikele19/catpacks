@@ -20,55 +20,50 @@
 }
 
 /* Paper background (dark) */
+/* === PAPER LIGHT THEME (2025) === */
+:root {
+  --paper: #f3f1ea;
+  --ink: #121212;
+  --ink2: rgba(0,0,0,.55);
+  --line: rgba(0,0,0,.14);
+}
+
 html, body {
-  background: url("/ui/paper-dark.svg") repeat;
-  background-size: 260px 260px;
+  background: var(--paper);
+  color: var(--ink);
 }
 
-/* Sketch UI primitives (NO backdrop-filter, NO blur) */
-.sketch-card {
-  border: 2px solid rgba(255,255,255,.18);
-  border-radius: 22px;
-  background: rgba(0,0,0,.58);
-  box-shadow: 3px 6px 0 rgba(0,0,0,.55);
+/* puntinato leggero (carta) */
+body {
+  background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);
+  background-size: 7px 7px;
 }
 
-.sketch-chip {
-  border: 2px solid rgba(255,255,255,.16);
+/* elementi "sticker" (NO blur) */
+.sticker {
+  background: rgba(255,255,255,.72);
+  border: 2px solid var(--line);
   border-radius: 18px;
-  background: rgba(255,255,255,.06);
-  box-shadow: 2px 4px 0 rgba(0,0,0,.5);
+  box-shadow: 2px 4px 0 rgba(0,0,0,.18);
 }
 
-.sketch-btn {
-  border: 2px solid rgba(255,255,255,.22);
-  border-radius: 18px;
-  background: rgba(255,255,255,.08);
-  box-shadow: 2px 4px 0 rgba(0,0,0,.55);
-  transform: rotate(-0.25deg);
-  transition: transform .08s ease, box-shadow .08s ease;
-}
-.sketch-btn:active {
-  transform: translateY(1px) rotate(0deg);
-  box-shadow: 1px 2px 0 rgba(0,0,0,.4);
+/* pulsanti stile "scritta" */
+.ink-action {
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 6px;
 }
 
-.sketch-btn-solid {
-  border: 2px solid rgba(255,255,255,.20);
-  border-radius: 18px;
-  background: rgba(255,255,255,.92);
-  color: #090a0f;
-  box-shadow: 2px 4px 0 rgba(0,0,0,.55);
-  transform: rotate(0.2deg);
-  transition: transform .08s ease, box-shadow .08s ease;
-}
-.sketch-btn-solid:active {
-  transform: translateY(1px) rotate(0deg);
-  box-shadow: 1px 2px 0 rgba(0,0,0,.4);
+/* testo secondario */
+.muted {
+  color: var(--ink2);
 }
 
-/* Sketch text look */
-.sketch-title {
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 0 rgba(0,0,0,.55);
+/* pack drop shadow (leggera) */
+.pack-shadow {
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,.20));
+}
+
+body {
+  font-family: var(--font-baloo), system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
