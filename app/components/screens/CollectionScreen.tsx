@@ -144,14 +144,14 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
             </div>
           </div>
 
-          <div className="rounded-2xl px-3 py-2 bg-white/6 border border-white/10 backdrop-blur-2xl">
+          <div className={`rounded-2xl px-3 py-2 bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-2xl"}`}>
             <div className="text-[11px] text-white/60 font-semibold">Owned</div>
             <div className="font-black text-lg">{Object.keys(ownedMap).length}</div>
           </div>
         </div>
 
         {/* search */}
-        <div className="mt-5 rounded-2xl bg-white/6 border border-white/10 backdrop-blur-2xl">
+        <div className={`mt-5 rounded-2xl bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-2xl"}`}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -201,10 +201,12 @@ export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolea
                         <div className="relative">
                           <div className="absolute inset-0 bg-gradient-to-b from-white/6 to-transparent" />
                           <img
-                            src={c.image_url}
-                            alt={c.name}
-                            className={`h-40 w-full object-cover ${has ? "" : "opacity-25 grayscale"}`}
-                          />
+                                src={c.image_url}
+                                loading="lazy"
+                                decoding="async"
+                                className="h-40 w-full object-cover"
+                            />
+
 
                           {has && (
                             <div className="absolute top-3 left-3 rounded-full bg-black/55 border border-white/10 px-2 py-1 text-[11px] font-black">
