@@ -15,6 +15,7 @@ export default function SwipeTabs({
   children: React.ReactNode[];
 }) {
   const [width, setWidth] = useState(0);
+  const [dragging, setDragging] = useState(false); // ✅ qui
   const x = useMotionValue(0);
 
   const index = useMemo(() => {
@@ -23,7 +24,7 @@ export default function SwipeTabs({
     return 2;
   }, [tab]);
 
-  // misuro viewport
+  // misura viewport
   useEffect(() => {
     const onResize = () => setWidth(window.innerWidth);
     onResize();
@@ -31,57 +32,74 @@ export default function SwipeTabs({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // quando cambio tab (da bottom nav), scrollo “a scatto”
+  // snap quando cambi tab dalla bottom nav
   useEffect(() => {
     if (!width) return;
-    animate(x, -index * width, { type: "spring", stiffness: 260, damping: 30 });
+    animate(x, -index * width, {
+      type: "spring",
+      stiffness: 260,
+      damping: 30,
+    });
   }, [index, width, x]);
 
-  const onDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: any, info: any) => {
     if (!width) return;
 
-    const [dragging, setDragging] = useState(false);
+    setDragging(false);
 
-    const offset = info.offset.x; // quanto hai trascinato
+    const offset = info.offset.x;
     const velocity = info.velocity.x;
 
-    // soglie swipe
     const swipePower = Math.abs(offset) * (Math.abs(velocity) / 800);
     const threshold = 120;
 
     let nextIndex = index;
 
-    // swipe verso sinistra -> vai avanti
-    if (offset < -threshold || (offset < -60 && swipePower > 40)) nextIndex = Math.min(2, index + 1);
-    // swipe verso destra -> vai indietro
-    if (offset > threshold || (offset > 60 && swipePower > 40)) nextIndex = Math.max(0, index - 1);
+    if (offset < -threshold || (offset < -60 && swipePower > 40)) {
+      nextIndex = Math.min(2, index + 1);
+    }
+    if (offset > threshold || (offset > 60 && swipePower > 40)) {
+      nextIndex = Math.max(0, index - 1);
+    }
 
-    const nextTab: TabKey = nextIndex === 0 ? "home" : nextIndex === 1 ? "collection" : "profile";
+    const nextTab: TabKey =
+      nextIndex === 0 ? "home" : nextIndex === 1 ? "collection" : "profile";
+
     setTab(nextTab);
 
-    animate(x, -nextIndex * width, { type: "spring", stiffness: 260, damping: 30 });
+    animate(x, -nextIndex * width, {
+      type: "spring",
+      stiffness: 260,
+      damping: 30,
+    });
   };
 
   return (
     <div className="relative min-h-screen overflow-hidden">
       <motion.div
-        className="flex"
-        style={{ x }}
+        className="flex will-change-transform"
+        style={{ x, transform: "translateZ(0)" as any }}
         drag="x"
         dragConstraints={{ left: -2 * width, right: 0 }}
         dragElastic={0.02}
-        onDragEnd={onDragEnd}
-        
+        onDragStart={() => setDragging(true)}
+        onDragEnd={handleDragEnd}
       >
-        {children.map((child, i) => {
-  const active = i === index;
-  return (
-    <div key={i} className="min-h-screen w-screen flex-shrink-0">
-      {/* Render completo solo se attiva o vicina */}
-      {Math.abs(i - index) <= 1 ? child : <div className="min-h-screen" />}
-    </div>
-  );
-})}
+        {children.map((child, i) => (
+  <div
+    key={i}
+    className="min-h-screen w-screen flex-shrink-0 [contain:paint]"
+  >
+    {Math.abs(i - index) <= 1
+      ? // passa lowPerfMode a tutte le screens
+        // @ts-ignore
+        (child as any)?.type
+        ? // @ts-ignore
+          (child as any).type({ ...(child as any).props, lowPerfMode: dragging })
+        : child
+      : <div className="min-h-screen" />}
+  </div>
+))}
 
       </motion.div>
     </div>

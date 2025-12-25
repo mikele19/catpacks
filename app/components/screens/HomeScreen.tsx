@@ -33,7 +33,14 @@ function vibrate(ms: number) {
   }
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
+    {!lowPerfMode && (
+  <>
+    <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[520px] w-[520px] rounded-full bg-blue-500/10 blur-[70px]" />
+    <div className="absolute -bottom-52 right-0 h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[80px]" />
+  </>
+)}
+
   const [email, setEmail] = useState("");
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -194,14 +201,14 @@ export default function HomeScreen() {
       <div className="relative px-5 pt-5 max-w-md mx-auto pb-28">
         {/* header */}
         <div className="flex items-center justify-between">
-          <div className="rounded-2xl px-3 py-2 bg-white/6 border border-white/10 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
+          <div className={'rounded-2xl px-3 py-2 bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-xl"} shadow-[0_12px_40px_rgba(0,0,0,0.45)'}>
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-xl bg-gradient-to-b from-yellow-200/30 to-yellow-500/10 border border-yellow-300/20" />
               <div className="font-extrabold">{credits}</div>
             </div>
           </div>
 
-          <div className="rounded-2xl px-3 py-2 bg-white/6 border border-white/10 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
+          <div className={'rounded-2xl px-3 py-2 bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-xl"} shadow-[0_12px_40px_rgba(0,0,0,0.45)'}>
             <div className="flex items-center gap-2">
               <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/35 to-fuchsia-500/20 border border-white/10 flex items-center justify-center font-black">
                 {initials}
@@ -237,7 +244,7 @@ export default function HomeScreen() {
         </div>
 
         {/* main card */}
-        <div className="mt-6 rounded-[28px] bg-white/6 border border-white/10 backdrop-blur-2xl shadow-[0_26px_90px_rgba(0,0,0,0.55)] p-5">
+        <div className={'mt-6 rounded-[28px] bg-white/6 border border-white/10 ${lowPerfMode ? "" : "backdrop-blur-2xl"} shadow-[0_26px_90px_rgba(0,0,0,0.55)] p-5'}>
           <div className="flex items-center justify-between">
             <div className="text-xs text-white/60 font-semibold tracking-wider">
               OPEN PACK

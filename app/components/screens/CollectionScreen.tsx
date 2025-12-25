@@ -52,7 +52,7 @@ function rarityPill(r: Rarity) {
   }
 }
 
-export default function CollectionScreen() {
+export default function CollectionScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [cats, setCats] = useState<Cat[]>([]);
   const [ownedMap, setOwnedMap] = useState<Record<string, Owned>>({});
