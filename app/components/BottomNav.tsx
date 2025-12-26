@@ -8,31 +8,19 @@ const tabs: { label: string; key: TabKey }[] = [
   { label: "Profilo", key: "profile" },
 ];
 
-function Icon({ name, active }: { name: "home" | "collection" | "profile"; active: boolean }) {
-  const common = `stroke-[2.6] ${active ? "stroke-black" : "stroke-black/45"}`;
-  if (name === "home") {
-    return (
-      <svg width="22" height="22" viewBox="0 0 24 24" className={common} fill="none">
-        <path d="M4 11.5 12 4l8 7.5" />
-        <path d="M7 10.8V20h10v-9.2" />
-      </svg>
-    );
-  }
-  if (name === "collection") {
-    return (
-      <svg width="22" height="22" viewBox="0 0 24 24" className={common} fill="none">
-        <path d="M7 7h14v14H7z" />
-        <path d="M3 3h14v14" />
-      </svg>
-    );
-  }
+function Icon({ src, active }: { src: string; active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" className={common} fill="none">
-      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
-      <path d="M4.5 20c1.8-4.2 13.2-4.2 15 0" />
-    </svg>
+    <img
+      src={src}
+      alt=""
+      className={`h-6 w-6 transition ${
+        active ? "opacity-100" : "opacity-50"
+      }`}
+      draggable={false}
+    />
   );
 }
+
 
 export default function BottomNav({
   tab,
@@ -43,7 +31,7 @@ export default function BottomNav({
 }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4">
-      <div className="mx-auto max-w-md sticker">
+      <div className="mx-auto max-w-md sticker bg-white/80">
         <div className="grid grid-cols-3">
           {tabs.map((t) => {
             const active = tab === t.key;
@@ -57,7 +45,17 @@ export default function BottomNav({
                 className="relative py-3 active:scale-[0.99] transition"
               >
                 <div className="flex flex-col items-center gap-1">
-                  <Icon name={iconName} active={active} />
+                  <Icon
+  src={
+    t.key === "home"
+      ? "/ui/icon-home.svg"
+      : t.key === "collection"
+      ? "/ui/icon-collection.svg"
+      : "/ui/icon-profile.svg"
+  }
+  active={active}
+/>
+
                   <div className={`text-[11px] font-black ${active ? "text-black" : "text-black/50"}`}>
                     {t.label}
                   </div>
