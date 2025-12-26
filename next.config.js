@@ -3,4 +3,15 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-module.exports = nextConfig;
+module.exports = {
+  headers() {
+    return [
+      {
+        source: "/ui/:path*",
+        headers: [
+          {key: "Cache-Control", value: "no-store"},
+        ],
+      },
+    ];
+  },
+};

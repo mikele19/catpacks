@@ -7,9 +7,8 @@ const baloo = Baloo_2({
   variable: "--font-baloo",
 });
 
-export const metadata: Metadata = {
-  title: "CatPacks",
-  description: "CatPacks",
+export const metadata = {
+  title: "CatPacks v1.0.3",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
