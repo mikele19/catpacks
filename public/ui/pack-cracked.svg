@@ -1,0 +1,23 @@
+<svg viewBox="0 0 300 360" xmlns="http://www.w3.org/2000/svg">
+  <!-- base -->
+  <rect x="10" y="10" rx="38" ry="38" width="280" height="340"
+        fill="#f3f1ea" stroke="#d8d5cc" stroke-width="3"/>
+
+  <!-- crepa -->
+  <path d="M150 70
+           L146 110
+           L154 150
+           L148 190
+           L152 230"
+        stroke="#999" stroke-width="2" fill="none"/>
+
+  <!-- stessa faccina -->
+  <circle cx="150" cy="160" r="34" fill="#ddd"/>
+  <path d="M125 135 l-12 -16 16 4z" fill="#333"/>
+  <path d="M175 135 l12 -16 -16 4z" fill="#333"/>
+
+  <text x="150" y="260" text-anchor="middle"
+        font-size="16" fill="#555">
+    si sta aprendo…
+  </text>
+</svg>
