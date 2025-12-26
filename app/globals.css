@@ -1,13 +1,79 @@
-/* SAFE RESET CSS */
+@import "tailwindcss";
 
-* {
-  box-sizing: border-box;
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Paper background (dark) */
+/* === PAPER LIGHT THEME (2025) === */
+:root {
+  --paper: #f3f1ea;
+  --ink: #121212;
+  --ink2: rgba(0,0,0,.55);
+  --line: rgba(0,0,0,.14);
 }
 
 html, body {
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f3f1ea;
-  color: #111;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* puntinato leggero (carta) */
+body {
+  background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+/* elementi "sticker" (NO blur) */
+.sticker {
+  background: rgba(255,255,255,.72);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 2px 4px 0 rgba(0,0,0,.18);
+}
+
+/* pulsanti stile "scritta" */
+.ink-action {
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+/* testo secondario */
+.muted {
+  color: var(--ink2);
+}
+
+/* pack drop shadow (leggera) */
+.pack-shadow {
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,.20));
+}
+
+body {
+  font-family: var(--font-baloo), system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.pack-idle {
+  animation: packBreathe 2.4s ease-in-out infinite;
+}
+
+@keyframes packBreathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+.animate-pack-breathe {
+  animation: packBreathe 2.4s ease-in-out infinite;
 }
