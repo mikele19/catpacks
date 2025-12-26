@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 300">
+  <rect x="20" y="20" width="180" height="260" rx="22" fill="#3B2F2F"/>
+  <path d="M110 40 L105 120 L115 180 L100 260" stroke="#F5EBDD" stroke-width="4" fill="none"/>
+  <text x="110" y="165" text-anchor="middle" font-size="28" fill="#F5EBDD">CAT PACK</text>
+</svg>
