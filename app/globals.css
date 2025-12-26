@@ -67,3 +67,20 @@ body {
 body {
   font-family: var(--font-baloo), system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
+
+.pack-idle {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes packBreathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+.animate-pack-breathe {
+  animation: packBreathe 2.4s ease-in-out infinite;
+}

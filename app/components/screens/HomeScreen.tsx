@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
-import PackArt from "@/app/components/PackArt";
+import PackArt from "../PackArt";
 
 type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
 type CatResult = { name: string; rarity: Rarity; image_url: string };

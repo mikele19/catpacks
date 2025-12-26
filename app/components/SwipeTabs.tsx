@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, animate, useMotionValue } from "framer-motion";
+import { useEffect, useMemo, useRef } from "react";
 
 export type TabKey = "home" | "collection" | "profile";
 
@@ -14,9 +13,7 @@ export default function SwipeTabs({
   setTab: (t: TabKey) => void;
   children: React.ReactNode[];
 }) {
-  const [width, setWidth] = useState(0);
-  const [dragging, setDragging] = useState(false); // ✅ qui
-  const x = useMotionValue(0);
+  const ref = useRef<HTMLDivElement | null>(null);
 
   const index = useMemo(() => {
     if (tab === "home") return 0;
@@ -24,84 +21,67 @@ export default function SwipeTabs({
     return 2;
   }, [tab]);
 
-  // misura viewport
+  // quando cambi tab dalla bottom bar -> scrolla in modo fluido
   useEffect(() => {
-    const onResize = () => setWidth(window.innerWidth);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    const el = ref.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    el.scrollTo({ left: index * w, behavior: "smooth" });
+  }, [index]);
 
-  // snap quando cambi tab dalla bottom nav
+  // quando swipi -> aggiorna tab in base allo “snap”
   useEffect(() => {
-    if (!width) return;
-    animate(x, -index * width, {
-      type: "spring",
-      stiffness: 260,
-      damping: 30,
-    });
-  }, [index, width, x]);
+    const el = ref.current;
+    if (!el) return;
 
-  const handleDragEnd = (_: any, info: any) => {
-    if (!width) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const w = el.clientWidth || 1;
+        const i = Math.round(el.scrollLeft / w);
+        const next: TabKey = i === 0 ? "home" : i === 1 ? "collection" : "profile";
+        if (next !== tab) setTab(next);
+      });
+    };
 
-    setDragging(false);
-
-    const offset = info.offset.x;
-    const velocity = info.velocity.x;
-
-    const swipePower = Math.abs(offset) * (Math.abs(velocity) / 800);
-    const threshold = 120;
-
-    let nextIndex = index;
-
-    if (offset < -threshold || (offset < -60 && swipePower > 40)) {
-      nextIndex = Math.min(2, index + 1);
-    }
-    if (offset > threshold || (offset > 60 && swipePower > 40)) {
-      nextIndex = Math.max(0, index - 1);
-    }
-
-    const nextTab: TabKey =
-      nextIndex === 0 ? "home" : nextIndex === 1 ? "collection" : "profile";
-
-    setTab(nextTab);
-
-    animate(x, -nextIndex * width, {
-      type: "spring",
-      stiffness: 260,
-      damping: 30,
-    });
-  };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [setTab, tab]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <motion.div
-        className="flex will-change-transform"
-        style={{ x, transform: "translateZ(0)" as any }}
-        drag="x"
-        dragConstraints={{ left: -2 * width, right: 0 }}
-        dragElastic={0.02}
-        onDragStart={() => setDragging(true)}
-        onDragEnd={handleDragEnd}
-      >
-        {children.map((child, i) => (
-  <div
-    key={i}
-    className="min-h-screen w-screen flex-shrink-0 [contain:paint]"
-  >
-    {Math.abs(i - index) <= 1
-      ? // passa lowPerfMode a tutte le screens
-        // @ts-ignore
-        (child as any)?.type
-        ? // @ts-ignore
-          (child as any).type({ ...(child as any).props, lowPerfMode: dragging })
-        : child
-      : <div className="min-h-screen" />}
-  </div>
-))}
+    <div
+      ref={ref}
+      className="
+        relative min-h-screen overflow-x-auto overflow-y-hidden
+        flex
+        snap-x snap-mandatory
+        scroll-smooth
+        [-webkit-overflow-scrolling:touch]
+      "
+      style={{
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      }}
+    >
+      {/* hide scrollbar (webkit) */}
+      <style jsx>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
 
-      </motion.div>
+      {children.map((child, i) => (
+        <section
+          key={i}
+          className="w-screen flex-shrink-0 snap-start min-h-screen"
+        >
+          {child}
+        </section>
+      ))}
     </div>
   );
 }
