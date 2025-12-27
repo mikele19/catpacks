@@ -20,35 +20,19 @@ type Owned = {
   latest_acquired_at: string;
 };
 
-function rarityPill(r: Rarity) {
-  switch (r) {
-    case "all":
-      return "Tutti";
-    case "common":
-      return "Common";
-    case "rare":
-      return "Rare";
-    case "epic":
-      return "Epic";
-    case "legendary":
-      return "Legendary";
-    case "mythic":
-      return "Mythic";
-  }
-}
-
-function rarityRing(r: Exclude<Rarity, "all">) {
+/* 🔥 COLORI CALDI */
+function rarityGradient(r: Exclude<Rarity, "all">) {
   switch (r) {
     case "common":
-      return "border-black/12";
+      return "from-red-600 to-red-700";
     case "rare":
-      return "border-blue-400/25";
+      return "from-orange-500 to-red-600";
     case "epic":
-      return "border-purple-400/25";
+      return "from-fuchsia-600 to-purple-700";
     case "legendary":
-      return "border-yellow-500/25";
+      return "from-yellow-400 to-orange-500";
     case "mythic":
-      return "border-fuchsia-500/25";
+      return "from-pink-500 via-fuchsia-600 to-purple-700";
   }
 }
 
@@ -62,217 +46,141 @@ export default function CollectionScreen() {
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-
       const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!userData.user) return;
 
-      const { data: catalog, error: catErr } = await supabase
+      const { data: catalog } = await supabase
         .from("cats_catalog")
         .select("id,name,rarity,image_url,base_value")
         .order("base_value", { ascending: true });
 
-      if (catErr) {
-        console.error(catErr);
-        setLoading(false);
-        return;
-      }
-      setCats((catalog ?? []) as Cat[]);
-
-      const { data: inv, error: invErr } = await supabase
+      const { data: inv } = await supabase
         .from("user_cats")
         .select("cat_id, acquired_at")
-        .eq("user_id", user.id);
-
-      if (invErr) {
-        console.error(invErr);
-        setLoading(false);
-        return;
-      }
+        .eq("user_id", userData.user.id);
 
       const map: Record<string, Owned> = {};
       for (const row of inv ?? []) {
-        const id = row.cat_id as string;
-        if (!map[id]) {
-          map[id] = { cat_id: id, count: 1, latest_acquired_at: row.acquired_at as string };
-        } else {
-          map[id].count += 1;
-          if ((row.acquired_at as string) > map[id].latest_acquired_at) {
-            map[id].latest_acquired_at = row.acquired_at as string;
-          }
-        }
+        map[row.cat_id] ??= {
+          cat_id: row.cat_id,
+          count: 0,
+          latest_acquired_at: row.acquired_at,
+        };
+        map[row.cat_id].count++;
       }
-      setOwnedMap(map);
 
+      setCats((catalog ?? []) as Cat[]);
+      setOwnedMap(map);
       setLoading(false);
     })();
   }, []);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return cats.filter((c) => {
-      const byQ = !q || c.name.toLowerCase().includes(q);
-      const byR = rarity === "all" || c.rarity === rarity;
-      return byQ && byR;
-    });
+    const q = query.toLowerCase();
+    return cats.filter(
+      (c) =>
+        (!q || c.name.toLowerCase().includes(q)) &&
+        (rarity === "all" || c.rarity === rarity)
+    );
   }, [cats, query, rarity]);
 
-  const ownedCount = useMemo(
-    () => Object.values(ownedMap).reduce((acc, o) => acc + o.count, 0),
-    [ownedMap]
-  );
-
   return (
-    <div className="min-h-screen text-black pb-28">
-      <div className="px-5 pt-5 max-w-md mx-auto">
-        {/* header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-4xl font-black leading-none tracking-tight">Collezione</div>
-            <div className="text-sm muted font-black mt-2">
-              carte <span className="text-black">{ownedCount}</span>
-            </div>
-          </div>
+    <div className="min-h-screen pb-28 text-white bg-gradient-to-b from-black via-[#120000] to-black">
+      <div className="max-w-md mx-auto px-5 pt-6">
 
-          <div className="sticker px-3 py-2">
-            <div className="text-[11px] muted font-black">uniche</div>
-            <div className="font-black text-lg">{Object.keys(ownedMap).length}</div>
-          </div>
+        {/* HEADER */}
+        <h1 className="text-4xl font-black tracking-tight">Collezione</h1>
+
+        {/* SEARCH */}
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cerca un gatto…"
+          className="mt-4 w-full rounded-xl bg-black/40 border border-red-600/40 px-4 py-3 font-bold outline-none"
+        />
+
+        {/* FILTRI */}
+        <div className="mt-4 flex gap-2 overflow-x-auto">
+          {(["all", "common", "rare", "epic", "legendary", "mythic"] as Rarity[]).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRarity(r)}
+              className={`px-4 py-2 rounded-full font-black text-sm
+                ${rarity === r
+                  ? "bg-red-600 text-white"
+                  : "bg-black/40 border border-red-600/30 text-white/70"}
+              `}
+            >
+              {r.toUpperCase()}
+            </button>
+          ))}
         </div>
 
-        {/* search */}
-        <div className="mt-5 sticker p-0 overflow-hidden">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca un gatto…"
-            className="w-full bg-transparent px-4 py-3 outline-none text-black placeholder:text-black/35 font-black"
-          />
-        </div>
-
-        {/* rarity pills */}
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          {(["all", "common", "rare", "epic", "legendary", "mythic"] as Rarity[]).map((r) => {
-            const active = rarity === r;
-            return (
-              <button
-                key={r}
-                onClick={() => setRarity(r)}
-                className={`shrink-0 px-4 py-2 text-[12px] font-black border-2 rounded-full ${
-                  active ? "border-black/25 bg-white/70" : "border-black/12 bg-white/45 text-black/70"
-                }`}
-              >
-                {rarityPill(r)}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* grid */}
-        <div className="mt-5">
+        {/* GRID */}
+        <div className="mt-6 grid grid-cols-2 gap-4">
           {loading ? (
-            <div className="text-black/60 font-black">Caricamento…</div>
-          ) : filtered.length === 0 ? (
-            <div className="text-black/55 font-black">Nessun risultato.</div>
+            <div>Caricamento…</div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {filtered.map((c) => {
-                const owned = ownedMap[c.id];
-                const has = !!owned;
-
-                return (
-                  <button key={c.id} onClick={() => setSelected({ ...c, owned })} className="text-left">
-                    <div className={`sticker overflow-hidden border-2 ${rarityRing(c.rarity)}`}>
-                      <div className="relative">
-                        <img
-                          src={c.image_url}
-                          alt={c.name}
-                          loading="lazy"
-                          decoding="async"
-                          className={`h-40 w-full object-cover ${has ? "" : "opacity-25 grayscale"}`}
-                        />
-
-                        {has && (
-                          <div className="absolute top-3 left-3 sticker px-2 py-1 text-[11px] font-black">
-                            x{owned.count}
-                          </div>
-                        )}
-
-                        <div className="absolute top-3 right-3 sticker px-2 py-1 text-[10px] font-black tracking-wider text-black/70">
-                          {c.rarity.toUpperCase()}
-                        </div>
-                      </div>
+            filtered.map((c) => {
+              const owned = ownedMap[c.id];
+              return (
+                <button key={c.id} onClick={() => setSelected({ ...c, owned })}>
+                  <div
+                    className={`rounded-2xl p-[2px] bg-gradient-to-br ${rarityGradient(
+                      c.rarity
+                    )}`}
+                  >
+                    <div className="rounded-2xl bg-black overflow-hidden">
+                      <img
+                        src={c.image_url}
+                        alt={c.name}
+                        className={`h-40 w-full object-cover ${
+                          owned ? "" : "opacity-25 grayscale"
+                        }`}
+                      />
 
                       <div className="p-3">
                         <div className="font-black">{c.name}</div>
-                        <div className="text-xs muted font-black mt-1">
-                          valore <span className="text-black">{c.base_value}</span>
+                        <div className="text-xs text-white/70">
+                          Valore {c.base_value}
                         </div>
-
-                        {!has && <div className="mt-2 text-[11px] muted font-black">non trovata</div>}
+                        {owned && (
+                          <div className="mt-1 text-sm font-black text-yellow-400">
+                            x{owned.count}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* Modal */}
+      {/* MODAL */}
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="fixed inset-0 z-[100] bg-black/40 flex items-end justify-center"
+            className="fixed inset-0 bg-black/70 z-50 flex items-end"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelected(null)}
           >
             <motion.div
-              className="w-full max-w-md rounded-t-[28px] border-2 border-black/12 bg-white/90 p-5 shadow-[0_25px_80px_rgba(0,0,0,0.25)]"
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ duration: 0.16 }}
+              className="w-full rounded-t-3xl bg-black border-t border-red-600 p-5"
+              initial={{ y: 50 }}
+              animate={{ y: 0 }}
+              exit={{ y: 50 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between">
-                <div className="font-black text-xl">{selected.name}</div>
-                <button onClick={() => setSelected(null)} className="sticker px-4 py-2 font-black">
-                  chiudi
-                </button>
-              </div>
-
-              <div className={`mt-4 sticker overflow-hidden border-2 ${rarityRing(selected.rarity)}`}>
-                <img
-                  src={selected.image_url}
-                  alt={selected.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-64 object-cover"
-                />
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="sticker p-3">
-                  <div className="text-[11px] muted font-black">rarità</div>
-                  <div className="font-black mt-1">{selected.rarity}</div>
-                </div>
-                <div className="sticker p-3">
-                  <div className="text-[11px] muted font-black">valore</div>
-                  <div className="font-black mt-1">{selected.base_value}</div>
-                </div>
-                <div className="sticker p-3">
-                  <div className="text-[11px] muted font-black">poss.</div>
-                  <div className="font-black mt-1">{selected.owned?.count ?? 0}</div>
-                </div>
-              </div>
+              <h2 className="text-2xl font-black">{selected.name}</h2>
+              <img
+                src={selected.image_url}
+                className="mt-4 rounded-xl w-full h-64 object-cover"
+              />
             </motion.div>
           </motion.div>
         )}

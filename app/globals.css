@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --red: #FF1E1E;
+  --orange: #FF7A00;
+  --yellow: #FFC400;
+
+  --purple: #C600FF;
+  --green: #4DFF00;
+  --cyan: #00E5FF;
+
+  --black: #0B0B0B;
+  --white: #FFFFFF;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,15 +29,16 @@
   --line: rgba(0,0,0,.14);
 }
 
-html, body {
-  background: var(--paper);
-  color: var(--ink);
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
 }
-
 /* puntinato leggero (carta) */
 body {
-  background-image: radial-gradient(rgba(0,0,0,0.035) 1px, transparent 1px);
-  background-size: 7px 7px;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* elementi "sticker" (NO blur) */
