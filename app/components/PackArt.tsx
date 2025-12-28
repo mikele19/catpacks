@@ -4,38 +4,45 @@ import { motion } from "framer-motion";
 
 export default function PackArt({
   state,
-  onTap, // Riceve il click per l'animazione "tap"
+  onTap,
+  shakeTrigger // Nuovo parametro
 }: {
-  // Accetta anche "reveal" per non rompere il tipo, ma visivamente lo tratta come aperto
   state: "idle" | "charging" | "opening" | "reveal";
   onTap: () => void;
+  shakeTrigger?: number; // Opzionale per compatibilità, ma noi lo useremo
 }) {
   
-  // Animazione vibrazione quando carichi
+  // Animazione scossa più forte e visibile
   const shake =
     state === "charging"
-      ? { rotate: [0, -2, 2, -2, 2, 0], y: [0, -1, 1, -1, 1, 0] }
-      : { rotate: 0, y: 0 };
+      ? { 
+          rotate: [0, -5, 5, -5, 5, 0], // Rotazione più accentuata
+          y: [0, -2, 2, -2, 2, 0],      // Saltello verticale
+          scale: [1, 1.05, 1],          // Leggero ingrandimento all'impatto
+        }
+      : { rotate: 0, y: 0, scale: 1 };
 
-  // Animazione pulsazione quando si apre
   const pulse =
     state === "opening"
-      ? { scale: [1, 1.05, 0.95] }
+      ? { scale: [1, 1.1, 0.9] }
       : { scale: 1 };
 
-  // Sceglie l'immagine in base allo stato
-  // Nota: Assicurati di avere queste immagini in /public/ui/
-  // Se non le hai, usa dei placeholder o rimetti i tuoi percorsi
   const packSrc =
     state === "opening" || state === "reveal"
-      ? "/pack/box-open.png"      // Usa il pacco aperto 3D
-      : "/pack/box-closed.png";   // Usa il pacco chiuso 3D (anche per 'charging')
+      ? "/pack/box-open.png"
+      : "/pack/box-closed.png";
+
   return (
     <motion.div
+      // MODIFICA: Usiamo 'shakeTrigger' come key quando sta caricando.
+      // Questo costringe React a "rifare" l'animazione ad ogni tap.
+      key={state === "charging" ? shakeTrigger : "static"}
+      
       animate={{ ...shake, ...pulse }}
-      transition={{ duration: 0.35 }}
-      className="relative w-[230px] h-[300px] flex items-center justify-center"
-      onClick={onTap} // Passa il click al genitore
+      transition={{ duration: 0.2 }} // Animazione molto veloce (0.2s) per stare dietro ai click rapidi
+      className="relative w-[230px] h-[300px] flex items-center justify-center cursor-pointer"
+      onClick={onTap}
+      whileTap={{ scale: 0.95 }} // Feedback visivo extra quando premi
     >
       <img
         src={packSrc}
@@ -46,7 +53,6 @@ export default function PackArt({
         }`}
       />
       
-      {/* Animazione CSS per il respiro quando è fermo */}
       <style jsx global>{`
         @keyframes packBreathe {
           0%, 100% { transform: scale(1); }
