@@ -170,7 +170,10 @@ export default function HomeScreen({
   }
 
   return (
-    <div className="min-h-screen text-black">
+  <div 
+    className="min-h-screen text-black bg-cover bg-center bg-no-repeat"
+    style={{ backgroundImage: "url('/ui/bg.png')" }}
+  >
       <div className="px-5 pt-5 max-w-md mx-auto pb-28">
         
         {/* Header Monete */}
