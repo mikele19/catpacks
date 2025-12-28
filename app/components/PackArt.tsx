@@ -28,11 +28,8 @@ export default function PackArt({
   // Se non le hai, usa dei placeholder o rimetti i tuoi percorsi
   const packSrc =
     state === "opening" || state === "reveal"
-      ? "/ui/pack-open.svg"      // Immagine pacchetto aperto
-      : state === "charging"
-      ? "/ui/pack-cracked.svg"   // Immagine pacchetto che sta per esplodere (opzionale)
-      : "/ui/pack-closed.svg";   // Immagine pacchetto chiuso
-
+      ? "/pack/box-open.png"      // Usa il pacco aperto 3D
+      : "/pack/box-closed.png";   // Usa il pacco chiuso 3D (anche per 'charging')
   return (
     <motion.div
       animate={{ ...shake, ...pulse }}
