@@ -1,5 +1,5 @@
-import HomeScreen from "@/app/components/screens/HomeScreen";
+import AppShell from "./components/AppShell";
 
 export default function Page() {
-  return <HomeScreen />;
+  return <AppShell />;
 }
