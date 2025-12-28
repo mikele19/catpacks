@@ -151,48 +151,52 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      <div className={`px-5 pt-5 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
+      <div className={`px-5 pt-8 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
-        {/* Header: Monete a sinistra, Player a destra */}
-        <div className="flex items-center justify-between">
-          <div className="sticker px-3 py-2 flex items-center gap-2 shadow-sm">
-            <span className="text-lg">🪙</span><div className="font-black text-lg leading-none">{credits}</div>
-          </div>
-          <button className="sticker px-3 py-2 flex items-center gap-2 active:scale-[0.99] transition shadow-sm">
-            <div className="h-9 w-9 rounded-2xl border-2 border-black/10 bg-white/70 flex items-center justify-center font-black">{initials}</div>
-            <div className="text-xs font-black text-black/60">Player</div>
-          </button>
-        </div>
-
-        {/* Logo e Costo Pacchetto */}
-        <div className="mt-8 flex flex-col items-center text-center">
-          
-          {/* MODIFICA: Il testo è stato sostituito con il logo */}
-          {/* Assicurati di aver salvato l'immagine come 'logo.png' in /public/ui/ */}
+        {/* 1. LOGO PRINCIPALE (Sopra tutto) */}
+        <div className="flex justify-center mb-6">
           <img src="/ui/logo.png" alt="CatPacks Logo" className="w-64 drop-shadow-lg" />
-          
-          {/* Badge "PACK 10" - Badge Bianco */}
-          <div className="mt-5 inline-flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-full border-2 border-black/5 shadow-sm">
-            <span className="text-[10px] font-black tracking-widest text-black/40 uppercase">Prezzo</span>
-            <div className="flex items-center gap-1">
-                <span className="font-black text-xl">{packCost}</span>
-                <span className="text-lg">🪙</span>
-            </div>
-          </div>
         </div>
 
-        {/* Area Bottoni Azione (Daily) */}
-        <div className="mt-6 flex justify-center">
-            <button 
-                onClick={claimDaily} 
-                disabled={busy || isRevealing} 
-                className="group relative px-6 py-2.5 bg-yellow-400 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all disabled:opacity-50 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-            >
-                <div className="flex items-center gap-2">
-                    <span className="text-xl group-hover:rotate-12 transition-transform">🎁</span>
-                    <span className="font-black text-black text-lg tracking-tight">Daily +20</span>
+        {/* 2. SEZIONE INFO & AZIONI (Layout Riorganizzato) */}
+        <div className="flex flex-col gap-4 items-center">
+            
+            {/* Fila Superiore: Monete e Player */}
+            <div className="flex w-full justify-between px-2">
+                <div className="sticker px-3 py-2 flex items-center gap-2 shadow-sm">
+                    <span className="text-lg">🪙</span><div className="font-black text-lg leading-none">{credits}</div>
                 </div>
-            </button>
+                <button className="sticker px-3 py-2 flex items-center gap-2 active:scale-[0.99] transition shadow-sm">
+                    <div className="h-9 w-9 rounded-2xl border-2 border-black/10 bg-white/70 flex items-center justify-center font-black">{initials}</div>
+                    <div className="text-xs font-black text-black/60">Player</div>
+                </button>
+            </div>
+
+            {/* Fila Inferiore: Prezzo e Daily Bonus (Allineati al centro) */}
+            <div className="flex items-center gap-4 mt-2">
+                
+                {/* Badge Prezzo */}
+                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-2 rounded-full border-2 border-black/5 shadow-sm h-[52px]">
+                    <span className="text-[10px] font-black tracking-widest text-black/40 uppercase">Prezzo</span>
+                    <div className="flex items-center gap-1">
+                        <span className="font-black text-xl">{packCost}</span>
+                        <span className="text-lg">🪙</span>
+                    </div>
+                </div>
+
+                {/* Bottone Daily */}
+                <button 
+                    onClick={claimDaily} 
+                    disabled={busy || isRevealing} 
+                    className="group relative px-5 h-[52px] bg-yellow-400 rounded-full border-[3px] border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all disabled:opacity-50 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[3px_3px_0px_rgba(0,0,0,1)] flex items-center"
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl group-hover:rotate-12 transition-transform">🎁</span>
+                        <span className="font-black text-black text-lg leading-none">+20 Daily</span>
+                    </div>
+                </button>
+            </div>
+
         </div>
 
         {/* Area Pacco */}
