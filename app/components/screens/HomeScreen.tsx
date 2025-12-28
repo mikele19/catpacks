@@ -130,10 +130,8 @@ export default function HomeScreen({
   if (loading) return <div className="min-h-screen flex items-center justify-center text-white font-black">Caricamento…</div>;
 
   return (
-    <div 
-      className="min-h-screen text-black bg-cover bg-center bg-no-repeat overflow-hidden relative"
-      style={{ backgroundImage: "url('/ui/bg.png')" }}
-    >
+    // MODIFICA: Rimosso 'style={{ backgroundImage... }}' perché ora è gestito da AppShell
+    <div className="min-h-screen text-black overflow-hidden relative">
       <AnimatePresence>
         {isRevealing && (
           <motion.div
@@ -151,18 +149,13 @@ export default function HomeScreen({
 
       <div className={`px-4 pt-6 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
-        {/* 1. HEADER: BLOCCO UNICO (Monete+Player) + DAILY */}
         <div className="flex items-center justify-center gap-3 w-full">
-            
-            {/* Blocco Unico: Monete a sinistra, Player a destra */}
             <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
-                {/* Pillola Monete */}
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
                     <span className="text-lg leading-none">🪙</span>
                     <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
                 </div>
 
-                {/* Info Player */}
                 <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-black text-xs text-gray-600">
                         {initials}
@@ -171,7 +164,6 @@ export default function HomeScreen({
                 </div>
             </div>
 
-            {/* Bottone Daily (+20) - Posizionato a destra */}
             <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
@@ -185,19 +177,15 @@ export default function HomeScreen({
             </button>
         </div>
 
-        {/* 2. LOGO PRINCIPALE (Grande) */}
         <div className="flex justify-center mt-6 mb-4">
           <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" />
         </div>
 
-        {/* 3. AREA PACCO + PREZZO */}
         <div className="mt-8 flex flex-col items-center justify-center min-h-[350px]">
           <div className="relative pack-shadow scale-110">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
           </div>
           
-          {/* 4. PREZZO "NUDO" (Sostituisce 'tocca il pacco') */}
-          {/* Nessun background, stesso font/colore della scritta 'tocca il pacco' */}
           <div className="mt-10 h-12 flex items-center justify-center">
             {stage === "idle" && (
                 <div className="text-sm font-black text-black/40 uppercase tracking-widest flex items-center gap-2">
@@ -208,7 +196,6 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* Rivelazione Gatto (Invariato) */}
       <AnimatePresence>
         {stage === "reveal" && lastCat && (
           <motion.div

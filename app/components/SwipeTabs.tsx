@@ -15,6 +15,8 @@ export default function SwipeTabs({
 })
  {
   const ref = useRef<HTMLDivElement | null>(null);
+  // Questo ref serve a capire se stiamo scorrendo "via codice" (click) o "a mano" (swipe)
+  const isProgrammaticScroll = useRef(false);
 
   const index = useMemo(() => {
     if (tab === "home") return 0;
@@ -22,21 +24,35 @@ export default function SwipeTabs({
     return 2;
   }, [tab]);
 
-  // quando cambi tab dalla bottom bar -> scrolla in modo fluido
+  // Quando cambi tab dai bottoni -> scrolla fluido
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    
+    // Attiviamo il blocco: "Stiamo muovendo noi, ignora eventi scroll"
+    isProgrammaticScroll.current = true;
+    
     const w = el.clientWidth;
     el.scrollTo({ left: index * w, behavior: "smooth" });
+
+    // Rilasciamo il blocco dopo un po' (tempo dell'animazione)
+    const timeout = setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 600);
+
+    return () => clearTimeout(timeout);
   }, [index]);
 
-  // quando swipi -> aggiorna tab in base allo “snap”
+  // Quando swipi a mano -> aggiorna tab
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
     let raf = 0;
     const onScroll = () => {
+      // Se il movimento è causato dal click sul bottone, NON fare nulla qui
+      if (isProgrammaticScroll.current) return;
+
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const w = el.clientWidth || 1;
@@ -55,17 +71,16 @@ export default function SwipeTabs({
 
   return (
     <div
-  ref={ref}
-  className={`
-    relative min-h-screen overflow-x-auto overflow-y-hidden
-    flex
-    snap-x snap-mandatory
-    scroll-smooth
-    [-webkit-overflow-scrolling:touch]
-  `}
->
-
-      {/* hide scrollbar (webkit) */}
+      ref={ref}
+      className={`
+        relative min-h-screen overflow-x-auto overflow-y-hidden
+        flex
+        snap-x snap-mandatory
+        scroll-smooth
+        [-webkit-overflow-scrolling:touch]
+      `}
+    >
+      {/* Nascondi scrollbar */}
       <style jsx>{`
         div::-webkit-scrollbar {
           display: none;
