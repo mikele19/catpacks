@@ -12,11 +12,11 @@ const POOL: {
   image: string;
   chance: number;
 }[] = [
-  { rarity: "common", name: "Common Cat", value: 10, image: "/ui/cat-common.png", chance: 55 },
-  { rarity: "rare", name: "Rare Cat", value: 30, image: "/ui/cat-rare.png", chance: 25 },
-  { rarity: "epic", name: "Epic Cat", value: 80, image: "/ui/cat-epic.png", chance: 12 },
-  { rarity: "legendary", name: "Legendary Cat", value: 200, image: "/ui/cat-legendary.png", chance: 6 },
-  { rarity: "mythic", name: "Mythic Cat", value: 500, image: "/ui/cat-mythic.png", chance: 2 },
+  { rarity: "common", name: "Common Cat", value: 10, image: "/public/cats/cat-common.png", chance: 55 },
+  { rarity: "rare", name: "Rare Cat", value: 30, image: "/public/cats/cat-rare.png", chance: 25 },
+  { rarity: "epic", name: "Epic Cat", value: 80, image: "/public/cats/cat-epic.png", chance: 12 },
+  { rarity: "legendary", name: "Legendary Cat", value: 200, image: "/public/cats/cat-legendary.png", chance: 6 },
+  { rarity: "mythic", name: "Mythic Cat", value: 500, image: "/public/cats/cat-mythic.png", chance: 2 },
 ];
 
 function pullCat() {
