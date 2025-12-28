@@ -151,7 +151,7 @@ export default function HomeScreen({
 
       <div className={`px-4 pt-6 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
-        {/* 1. HEADER UNIFICATO (Monete + Player) e DAILY a destra */}
+        {/* 1. HEADER: BLOCCO UNICO (Monete+Player) + DAILY */}
         <div className="flex items-center justify-center gap-3 w-full">
             
             {/* Blocco Unico: Monete a sinistra, Player a destra */}
@@ -171,7 +171,7 @@ export default function HomeScreen({
                 </div>
             </div>
 
-            {/* Bottone Daily (+20) */}
+            {/* Bottone Daily (+20) - Posizionato a destra */}
             <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
@@ -185,33 +185,24 @@ export default function HomeScreen({
             </button>
         </div>
 
-        {/* 2. LOGO PRINCIPALE */}
+        {/* 2. LOGO PRINCIPALE (Grande) */}
         <div className="flex justify-center mt-6 mb-4">
           <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" />
         </div>
 
-        {/* 3. AREA PACCO */}
+        {/* 3. AREA PACCO + PREZZO */}
         <div className="mt-8 flex flex-col items-center justify-center min-h-[350px]">
           <div className="relative pack-shadow scale-110">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
           </div>
           
-          {/* 4. PREZZO AL POSTO DI "TOCCA IL PACCO" */}
-          {/* Questo div ha un'altezza fissa per evitare salti di layout */}
+          {/* 4. PREZZO "NUDO" (Sostituisce 'tocca il pacco') */}
+          {/* Nessun background, stesso font/colore della scritta 'tocca il pacco' */}
           <div className="mt-10 h-12 flex items-center justify-center">
             {stage === "idle" && (
-                <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="sticker px-5 py-2 flex items-center gap-3 bg-white/90 backdrop-blur shadow-sm rounded-full border-2 border-white/50"
-                >
-                    <span className="text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">Prezzo</span>
-                    <div className="w-px h-4 bg-black/10"></div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="font-black text-xl text-black">{packCost}</span>
-                        <span className="text-lg">🪙</span>
-                    </div>
-                </motion.div>
+                <div className="text-sm font-black text-black/40 uppercase tracking-widest flex items-center gap-2">
+                    PREZZO {packCost} 🪙
+                </div>
             )}
           </div>
         </div>
