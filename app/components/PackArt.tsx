@@ -12,11 +12,11 @@ const POOL: {
   image: string;
   chance: number;
 }[] = [
-  { rarity: "common", name: "Common Cat", value: 10, image: "/public/cats/cat-common.png", chance: 55 },
-  { rarity: "rare", name: "Rare Cat", value: 30, image: "/public/cats/cat-rare.png", chance: 25 },
-  { rarity: "epic", name: "Epic Cat", value: 80, image: "/public/cats/cat-epic.png", chance: 12 },
-  { rarity: "legendary", name: "Legendary Cat", value: 200, image: "/public/cats/cat-legendary.png", chance: 6 },
-  { rarity: "mythic", name: "Mythic Cat", value: 500, image: "/public/cats/cat-mythic.png", chance: 2 },
+  { rarity: "common", name: "Common Cat", value: 10, image: "/ui/cat-common.png", chance: 55 },
+  { rarity: "rare", name: "Rare Cat", value: 30, image: "/ui/cat-rare.png", chance: 25 },
+  { rarity: "epic", name: "Epic Cat", value: 80, image: "/ui/cat-epic.png", chance: 12 },
+  { rarity: "legendary", name: "Legendary Cat", value: 200, image: "/ui/cat-legendary.png", chance: 6 },
+  { rarity: "mythic", name: "Mythic Cat", value: 500, image: "/ui/cat-mythic.png", chance: 2 },
 ];
 
 function pullCat() {
@@ -35,9 +35,12 @@ export default function PackArt() {
   const [taps, setTaps] = useState(0);
   const [state, setState] = useState<"closed" | "opened" | "reveal">("closed");
   const [cat, setCat] = useState<null | typeof POOL[number]>(null);
+  const [shakeDir, setShakeDir] = useState(1);
 
   const handleTap = () => {
     if (state !== "closed") return;
+
+    setShakeDir((d) => -d); // alterna direzione
     setTaps((t) => t + 1);
   };
 
@@ -60,22 +63,34 @@ export default function PackArt() {
 
   return (
     <div className="relative flex items-center justify-center h-[440px]">
-      {/* SCATOLA */}
-      <motion.img
-        src={state === "closed" ? "/pack/box-closed.png" : "/pack/box-open.png"}
+      {/* CONTENITORE SCATOLA (dimensioni FISSE) */}
+      <motion.div
+        className="relative w-[240px] h-[300px]"
         onClick={handleTap}
-        className="w-[240px] select-none"
-        animate={{ scale: state === "closed" && taps > 0 ? [1, 1.05, 1] : 1 }}
-        transition={{ duration: 0.2 }}
-      />
+        whileTap={{
+          scale: 0.93,
+          rotate: shakeDir * (2 + Math.random()),
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 18,
+        }}
+      >
+        <img
+          src={state === "closed" ? "/pack/box-closed.png" : "/pack/box-open.png"}
+          className="absolute inset-0 w-full h-full object-contain select-none"
+          draggable={false}
+        />
+      </motion.div>
 
       {/* FLASH */}
       <AnimatePresence>
         {state === "reveal" && (
           <motion.div
-            initial={{ scale: 0, opacity: 0.8 }}
+            initial={{ scale: 0, opacity: 0.85 }}
             animate={{ scale: 6, opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             className="absolute inset-0 bg-white rounded-full z-20"
           />
         )}
@@ -85,10 +100,10 @@ export default function PackArt() {
       <AnimatePresence>
         {cat && (
           <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.6, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: -10 }}
             exit={{ scale: 0.6, opacity: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             className="absolute z-30 flex flex-col items-center rounded-2xl bg-white px-5 py-4 shadow-xl"
           >
             <img src={cat.image} className="w-[160px]" draggable={false} />
