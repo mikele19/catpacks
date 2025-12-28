@@ -31,7 +31,11 @@ function pullCat() {
   return POOL[0];
 }
 
-export default function PackArt() {
+export default function PackArt({
+  onRedeem,
+}: {
+  onRedeem: (value: number) => void;
+}) {
   const [taps, setTaps] = useState(0);
   const [state, setState] = useState<"closed" | "opened" | "reveal">("closed");
   const [cat, setCat] = useState<null | typeof POOL[number]>(null);
@@ -39,8 +43,7 @@ export default function PackArt() {
 
   const handleTap = () => {
     if (state !== "closed") return;
-
-    setShakeDir((d) => -d); // alterna direzione
+    setShakeDir((d) => -d);
     setTaps((t) => t + 1);
   };
 
@@ -56,6 +59,10 @@ export default function PackArt() {
   }, [taps]);
 
   const resetPack = () => {
+    if (cat) {
+      onRedeem(cat.value);
+    }
+
     setTaps(0);
     setState("closed");
     setCat(null);
@@ -63,7 +70,6 @@ export default function PackArt() {
 
   return (
     <div className="relative flex items-center justify-center h-[440px]">
-      {/* CONTENITORE SCATOLA (dimensioni FISSE) */}
       <motion.div
         className="relative w-[240px] h-[300px]"
         onClick={handleTap}
@@ -84,7 +90,6 @@ export default function PackArt() {
         />
       </motion.div>
 
-      {/* FLASH */}
       <AnimatePresence>
         {state === "reveal" && (
           <motion.div
@@ -96,21 +101,18 @@ export default function PackArt() {
         )}
       </AnimatePresence>
 
-      {/* CARD GATTO */}
       <AnimatePresence>
         {cat && (
           <motion.div
             initial={{ scale: 0.6, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: -10 }}
             exit={{ scale: 0.6, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.4 }}
             className="absolute z-30 flex flex-col items-center rounded-2xl bg-white px-5 py-4 shadow-xl"
           >
             <img src={cat.image} className="w-[160px]" draggable={false} />
 
-            <p className="mt-2 text-lg font-bold text-black">
-              {cat.name}
-            </p>
+            <p className="mt-2 text-lg font-bold text-black">{cat.name}</p>
 
             <button
               onClick={resetPack}

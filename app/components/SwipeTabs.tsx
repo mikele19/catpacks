@@ -6,13 +6,14 @@ export type TabKey = "home" | "collection" | "profile";
 
 export default function SwipeTabs({
   tab,
-  setTab,
+  onTabChange,
   children,
 }: {
   tab: TabKey;
-  setTab: (t: TabKey) => void;
+  onTabChange: (t: TabKey) => void;
   children: React.ReactNode[];
-}) {
+})
+ {
   const ref = useRef<HTMLDivElement | null>(null);
 
   const index = useMemo(() => {
@@ -41,7 +42,7 @@ export default function SwipeTabs({
         const w = el.clientWidth || 1;
         const i = Math.round(el.scrollLeft / w);
         const next: TabKey = i === 0 ? "home" : i === 1 ? "collection" : "profile";
-        if (next !== tab) setTab(next);
+        if (next !== tab) onTabChange(next);
       });
     };
 
@@ -50,7 +51,7 @@ export default function SwipeTabs({
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [setTab, tab]);
+  }, [onTabChange, tab]);
 
   return (
     <div

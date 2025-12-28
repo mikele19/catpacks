@@ -24,11 +24,12 @@ function Icon({ src, active }: { src: string; active: boolean }) {
 
 export default function BottomNav({
   tab,
-  setTab,
+  onTabChange,
 }: {
   tab: TabKey;
-  setTab: (t: TabKey) => void;
-}) {
+  onTabChange: (t: TabKey) => void;
+})
+ {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4">
       <div className="mx-auto max-w-md sticker bg-white/80">
@@ -41,7 +42,7 @@ export default function BottomNav({
             return (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
+                onClick={() => onTabChange(t.key)}
                 className="relative py-3 active:scale-[0.99] transition"
               >
                 <div className="flex flex-col items-center gap-1">

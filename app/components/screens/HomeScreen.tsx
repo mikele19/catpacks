@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
@@ -18,7 +18,14 @@ function vibrate(ms: number) {
   }
 }
 
-export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
+export default function HomeScreen({
+  lowPerfMode,
+  children,
+}: {
+  lowPerfMode?: boolean;
+  children?: ReactNode;
+}) {
+
   const [email, setEmail] = useState("");
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -212,8 +219,10 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
             </AnimatePresence>
 
             <div className="pack-shadow">
-              <PackArt />
+              <PackArt onRedeem={() => {}} />
             </div>
+            {children}
+
 
           </div>
 
