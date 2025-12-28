@@ -115,11 +115,18 @@ export default function HomeScreen({
   };
 
   const tap = () => {
+    // MODIFICA: Se è fermo ("idle"), il click fa partire il gioco (come il tasto start)
+    if (stage === "idle") {
+      start();
+      return;
+    }
+
+    // Se non sta caricando ("charging"), ignora il click
     if (stage !== "charging") return;
+    
     setTaps((t) => Math.min(tapsNeeded, t + 1));
     vibrate(6);
   };
-
   useEffect(() => {
     (async () => {
       if (stage !== "charging") return;
