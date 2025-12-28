@@ -37,18 +37,18 @@ export default function CollectionScreen() {
   const [rarity, setRarity] = useState<Rarity>("all");
   const [selected, setSelected] = useState<(Cat & { owned?: Owned }) | null>(null);
 
-  // Scarica i dati dal DB (Catalogo + Inventario Utente)
+  // Scarica i dati dal DB
   const fetchData = async () => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
 
-    // 1. Prendi il Catalogo (Tutti i gatti possibili)
+    // 1. Prendi il Catalogo
     const { data: catalog } = await supabase
       .from("cats_catalog")
       .select("*")
       .order("base_value", { ascending: true });
 
-    // 2. Prendi l'Inventario (Gatti posseduti)
+    // 2. Prendi l'Inventario
     const { data: inv } = await supabase
       .from("user_cats")
       .select("cat_id")
@@ -67,8 +67,6 @@ export default function CollectionScreen() {
 
   useEffect(() => {
     fetchData();
-    // NESSUN Realtime qui. Semplice e pulito.
-    // Se trovi un gatto nuovo, ricarica la pagina per vederlo qui.
   }, []);
 
   const filtered = useMemo(() => {
@@ -112,17 +110,46 @@ export default function CollectionScreen() {
             filtered.map((c) => {
               const owned = ownedMap[c.id];
               return (
-                <button key={c.id} onClick={() => setSelected({ ...c, owned })}>
+                <button 
+                  key={c.id} 
+                  // Se non ce l'hai, il click non apre il dettaglio (oppure puoi lasciarlo aprire)
+                  onClick={() => owned ? setSelected({ ...c, owned }) : null}
+                  className={`relative transition-transform ${!owned ? 'opacity-80' : 'active:scale-95'}`}
+                >
                   <div className={`rounded-2xl p-[3px] shadow-sm bg-gradient-to-br ${rarityGradient(c.rarity)}`}>
+                    
                     <div className="rounded-2xl bg-white overflow-hidden relative h-full">
-                      <img
-                        src={c.image_url}
-                        alt={c.name}
-                        className={`h-40 w-full object-contain bg-gray-100 ${owned ? "" : "opacity-40 grayscale"}`}
-                      />
-                      <div className="p-3 bg-white text-left">
-                        <div className="font-black leading-tight">{c.name}</div>
+                      
+                      {/* CONTENITORE IMMAGINE */}
+                      <div className="relative h-40 w-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={c.image_url}
+                          alt={c.name}
+                          // MODIFICA QUI: Effetto Blur + Grayscale se non posseduto
+                          className={`h-full w-full object-contain transition-all duration-500
+                            ${owned 
+                              ? "scale-100 blur-0 grayscale-0 opacity-100" 
+                              : "scale-110 blur-[8px] grayscale opacity-40" // Effetto vedi/non vedi
+                            }
+                          `}
+                        />
+
+                        {/* OVERLAY LUCCHETTO SE NON POSSEDUTO */}
+                        {!owned && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                            <span className="text-4xl drop-shadow-md">🔒</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3 bg-white text-left relative z-20">
+                        {/* Se non ce l'hai, nascondi il nome con ??? oppure mostralo sfumato */}
+                        <div className={`font-black leading-tight ${!owned ? "text-black/40" : ""}`}>
+                          {owned ? c.name : "???"}
+                        </div>
+                        
                         <div className="text-xs text-black/50 font-bold mt-1">Valore {c.base_value}</div>
+                        
                         {owned && (
                            <div className="absolute top-2 right-2 bg-yellow-400 text-black text-xs font-black px-2 py-1 rounded-full shadow-sm">
                              x{owned.count}
