@@ -1,128 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
-type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
-
-const POOL: {
-  rarity: Rarity;
-  name: string;
-  value: number;
-  image: string;
-  chance: number;
-}[] = [
-  { rarity: "common", name: "Common Cat", value: 10, image: "/ui/cat-common.png", chance: 55 },
-  { rarity: "rare", name: "Rare Cat", value: 30, image: "/ui/cat-rare.png", chance: 25 },
-  { rarity: "epic", name: "Epic Cat", value: 80, image: "/ui/cat-epic.png", chance: 12 },
-  { rarity: "legendary", name: "Legendary Cat", value: 200, image: "/ui/cat-legendary.png", chance: 6 },
-  { rarity: "mythic", name: "Mythic Cat", value: 500, image: "/ui/cat-mythic.png", chance: 2 },
-];
-
-function pullCat() {
-  const roll = Math.random() * 100;
-  let acc = 0;
-
-  for (const cat of POOL) {
-    acc += cat.chance;
-    if (roll <= acc) return cat;
-  }
-
-  return POOL[0];
-}
+import { motion } from "framer-motion";
 
 export default function PackArt({
-  onRedeem,
+  state,
+  onTap, // Riceve il click per l'animazione "tap"
 }: {
-  onRedeem: (value: number) => void;
+  // Accetta anche "reveal" per non rompere il tipo, ma visivamente lo tratta come aperto
+  state: "idle" | "charging" | "opening" | "reveal";
+  onTap: () => void;
 }) {
-  const [taps, setTaps] = useState(0);
-  const [state, setState] = useState<"closed" | "opened" | "reveal">("closed");
-  const [cat, setCat] = useState<null | typeof POOL[number]>(null);
-  const [shakeDir, setShakeDir] = useState(1);
+  
+  // Animazione vibrazione quando carichi
+  const shake =
+    state === "charging"
+      ? { rotate: [0, -2, 2, -2, 2, 0], y: [0, -1, 1, -1, 1, 0] }
+      : { rotate: 0, y: 0 };
 
-  const handleTap = () => {
-    if (state !== "closed") return;
-    setShakeDir((d) => -d);
-    setTaps((t) => t + 1);
-  };
+  // Animazione pulsazione quando si apre
+  const pulse =
+    state === "opening"
+      ? { scale: [1, 1.05, 0.95] }
+      : { scale: 1 };
 
-  useEffect(() => {
-    if (taps === 3) {
-      setState("opened");
-
-      setTimeout(() => {
-        setCat(pullCat());
-        setState("reveal");
-      }, 1000);
-    }
-  }, [taps]);
-
-  const resetPack = () => {
-    if (cat) {
-      onRedeem(cat.value);
-    }
-
-    setTaps(0);
-    setState("closed");
-    setCat(null);
-  };
+  // Sceglie l'immagine in base allo stato
+  // Nota: Assicurati di avere queste immagini in /public/ui/
+  // Se non le hai, usa dei placeholder o rimetti i tuoi percorsi
+  const packSrc =
+    state === "opening" || state === "reveal"
+      ? "/ui/pack-open.svg"      // Immagine pacchetto aperto
+      : state === "charging"
+      ? "/ui/pack-cracked.svg"   // Immagine pacchetto che sta per esplodere (opzionale)
+      : "/ui/pack-closed.svg";   // Immagine pacchetto chiuso
 
   return (
-    <div className="relative flex items-center justify-center h-[440px]">
-      <motion.div
-        className="relative w-[240px] h-[300px]"
-        onClick={handleTap}
-        whileTap={{
-          scale: 0.93,
-          rotate: shakeDir * (2 + Math.random()),
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 18,
-        }}
-      >
-        <img
-          src={state === "closed" ? "/pack/box-closed.png" : "/pack/box-open.png"}
-          className="absolute inset-0 w-full h-full object-contain select-none"
-          draggable={false}
-        />
-      </motion.div>
-
-      <AnimatePresence>
-        {state === "reveal" && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0.85 }}
-            animate={{ scale: 6, opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="absolute inset-0 bg-white rounded-full z-20"
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {cat && (
-          <motion.div
-            initial={{ scale: 0.6, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: -10 }}
-            exit={{ scale: 0.6, opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute z-30 flex flex-col items-center rounded-2xl bg-white px-5 py-4 shadow-xl"
-          >
-            <img src={cat.image} className="w-[160px]" draggable={false} />
-
-            <p className="mt-2 text-lg font-bold text-black">{cat.name}</p>
-
-            <button
-              onClick={resetPack}
-              className="mt-3 rounded-xl bg-orange-500 px-6 py-2 font-semibold text-white active:scale-95"
-            >
-              Riscatta · {cat.value}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <motion.div
+      animate={{ ...shake, ...pulse }}
+      transition={{ duration: 0.35 }}
+      className="relative w-[230px] h-[300px] flex items-center justify-center"
+      onClick={onTap} // Passa il click al genitore
+    >
+      <img
+        src={packSrc}
+        alt="Pack"
+        draggable={false}
+        className={`w-full h-full select-none object-contain ${
+          state === "idle" ? "animate-pack-breathe" : ""
+        }`}
+      />
+      
+      {/* Animazione CSS per il respiro quando è fermo */}
+      <style jsx global>{`
+        @keyframes packBreathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        .animate-pack-breathe {
+          animation: packBreathe 2.4s ease-in-out infinite;
+        }
+      `}</style>
+    </motion.div>
   );
 }

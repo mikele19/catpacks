@@ -21,13 +21,18 @@ function vibrate(ms: number) {
 export default function HomeScreen({
   lowPerfMode,
   children,
+  credits,
+  setCredits,
+  onRedeem,
 }: {
+  credits: number;
+  setCredits: (v: number) => void;
+  onRedeem: (value: number) => void;
   lowPerfMode?: boolean;
   children?: ReactNode;
 }) {
 
   const [email, setEmail] = useState("");
-  const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [busy, setBusy] = useState(false);
@@ -71,6 +76,7 @@ export default function HomeScreen({
 
   useEffect(() => {
     loadProfile();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const claimDaily = async () => {
@@ -92,7 +98,10 @@ export default function HomeScreen({
     const res = await fetch("/api/open-pack", { method: "POST", headers });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Errore apertura");
+    
+    // Aggiorna crediti
     setCredits(json.credits);
+    // Imposta il gatto trovato
     setLastCat(json.cat);
   };
 
@@ -124,12 +133,14 @@ export default function HomeScreen({
         await new Promise((r) => setTimeout(r, 220));
         setStage("reveal");
         vibrate(25);
-      } catch {
+      } catch (e) {
+        console.error(e);
         setStage("idle");
       } finally {
         setBusy(false);
       }
     })();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taps, stage]);
 
   const skip = async () => {
@@ -161,10 +172,10 @@ export default function HomeScreen({
   return (
     <div className="min-h-screen text-black">
       <div className="px-5 pt-5 max-w-md mx-auto pb-28">
-        {/* top stickers (light paper) */}
+        
+        {/* Header Monete */}
         <div className="flex items-center justify-between">
           <div className="sticker px-3 py-2 flex items-center gap-2">
-            {/* se coin.svg non c’è ancora, va bene anche questa fallback */}
             <span className="text-lg">🪙</span>
             <div className="font-black text-lg leading-none">{credits}</div>
           </div>
@@ -177,7 +188,7 @@ export default function HomeScreen({
           </button>
         </div>
 
-        {/* title */}
+        {/* Titolo */}
         <div className="mt-7">
           <div className="text-5xl font-black leading-none tracking-tight">
             CatPacks
@@ -188,7 +199,7 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* micro actions */}
+        {/* Azioni */}
         <div className="mt-4 flex items-center justify-between">
           <button onClick={claimDaily} disabled={busy} className="ink-action disabled:opacity-40">
             +20 daily
@@ -203,7 +214,7 @@ export default function HomeScreen({
           </button>
         </div>
 
-        {/* Pack: NO cards, just the sticker pack */}
+        {/* Pack Area */}
         <div className="mt-8 flex flex-col items-center">
           <div className="relative">
             <AnimatePresence>
@@ -219,11 +230,13 @@ export default function HomeScreen({
             </AnimatePresence>
 
             <div className="pack-shadow">
-              <PackArt onRedeem={() => {}} />
+              {/* PackArt ora è puramente visivo */}
+              <PackArt
+                state={stage}
+                onTap={tap}
+              />
             </div>
             {children}
-
-
           </div>
 
           <div className="mt-4 text-sm muted font-black">
@@ -231,7 +244,7 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* Reveal: one clean sticker */}
+        {/* Reveal Card */}
         <AnimatePresence>
           {stage === "reveal" && lastCat && (
             <motion.div
