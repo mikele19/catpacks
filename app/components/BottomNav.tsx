@@ -18,9 +18,13 @@ export default function BottomNav({
 })
  {
   return (
-    // Ho spostato il commento qui sopra, fuori dal return JSX per evitare errori
-    // z-[100] assicura che il menu sia SOPRA a tutto
-    <div className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4">
+    // Aggiungo onTouchStart e onMouseDown con stopPropagation.
+    // Questo impedisce allo "Swipe" di rubare il click sui bottoni.
+    <div 
+      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4"
+      onTouchStart={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       
       <div className="mx-auto max-w-md sticker bg-white/90 backdrop-blur-md shadow-2xl">
         <div className="grid grid-cols-3">

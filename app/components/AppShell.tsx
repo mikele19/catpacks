@@ -18,7 +18,10 @@ export default function AppShell() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+    <div 
+      className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat text-black"
+      style={{ backgroundImage: "url('/ui/bg.png')" }}
+    >
       {/* SwipeTabs ora usa la prop corretta: onTabChange */}
       <SwipeTabs tab={tab} onTabChange={setTab}>
         <HomeScreen
