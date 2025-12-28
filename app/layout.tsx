@@ -7,11 +7,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div className="min-h-screen relative">
-          {children}
-        </div>
-      </body>
+      <body
+  style={{
+    backgroundImage: "url('/ui/bg.png')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {children}
+</body>
     </html>
   );
 }

@@ -10,24 +10,13 @@ import PackArt from "@/app/components/PackArt";
 
 export default function AppShell() {
   const [tab, setTab] = useState<TabKey>("home");
-  const [coins, setCoins] = useState(500);
-
-  const PACK_COST = 100;
-
-  const handleRedeem = (value: number) => {
-    setCoins((c) => c - PACK_COST + value);
-  };
+ 
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-hidden">
-      <div className="fixed top-4 left-4 z-50 rounded-xl bg-black/50 px-4 py-2 backdrop-blur">
-        🪙 {coins}
-      </div>
+    <div className="relative min-h-screen text-white overflow-hidden">
 
       <SwipeTabs tab={tab} onTabChange={setTab}>
-        <HomeScreen>
-          <PackArt onRedeem={handleRedeem} />
-        </HomeScreen>
+        <HomeScreen />
 
         <CollectionScreen />
 
