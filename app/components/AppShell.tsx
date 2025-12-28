@@ -12,11 +12,25 @@ export default function AppShell() {
   const [tab, setTab] = useState<TabKey>("home");
 
   return (
-    <div className="relative min-h-screen">
-      {tab === "home" && <HomeScreen />}
-      {tab === "collection" && <CollectionScreen />}
-      {tab === "profile" && <ProfileScreen />}
+    <div className="relative min-h-screen overflow-hidden">
+      {/* 🔥 SFONDO GLOBALE */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          backgroundImage: "url(/ui/bg.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
 
+      {/* CONTENUTO */}
+      <div className="pb-24">
+        {tab === "home" && <HomeScreen />}
+        {tab === "collection" && <CollectionScreen />}
+        {tab === "profile" && <ProfileScreen />}
+      </div>
+
+      {/* NAV SEMPRE DAVANTI */}
       <BottomNav tab={tab} setTab={setTab} />
     </div>
   );
