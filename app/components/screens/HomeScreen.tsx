@@ -121,23 +121,6 @@ export default function HomeScreen({
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taps, stage]);
 
-  const skip = async () => {
-    if (stage === "reveal" || busy || isRevealing) return;
-    setStage("opening");
-    setBusy(true);
-    setIsRevealing(true);
-    try {
-      await doOpenPack();
-      setStage("reveal");
-      vibrate(30);
-    } catch {
-      setStage("idle");
-      setIsRevealing(false);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const reset = () => {
     setStage("idle");
     setIsRevealing(false);
@@ -169,39 +152,62 @@ export default function HomeScreen({
       </AnimatePresence>
 
       <div className={`px-5 pt-5 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
+        
+        {/* Header: Monete a sinistra, Player a destra */}
         <div className="flex items-center justify-between">
-          <div className="sticker px-3 py-2 flex items-center gap-2">
+          <div className="sticker px-3 py-2 flex items-center gap-2 shadow-sm">
             <span className="text-lg">🪙</span><div className="font-black text-lg leading-none">{credits}</div>
           </div>
-          <button className="sticker px-3 py-2 flex items-center gap-2 active:scale-[0.99] transition">
+          <button className="sticker px-3 py-2 flex items-center gap-2 active:scale-[0.99] transition shadow-sm">
             <div className="h-9 w-9 rounded-2xl border-2 border-black/10 bg-white/70 flex items-center justify-center font-black">{initials}</div>
             <div className="text-xs font-black text-black/60">Player</div>
           </button>
         </div>
 
-        <div className="mt-7">
-          <div className="text-5xl font-black leading-none tracking-tight">CatPacks</div>
-          {/* RIMOSSO: Percentuale rimossa */}
-          <div className="mt-2 text-sm muted font-black">pack <span className="text-black">{packCost}</span></div>
+        {/* Logo e Costo Pacchetto */}
+        <div className="mt-8 flex flex-col items-center text-center">
+          
+          {/* MODIFICA: Il testo è stato sostituito con il logo */}
+          {/* Assicurati di aver salvato l'immagine come 'logo.png' in /public/ui/ */}
+          <img src="/ui/logo.png" alt="CatPacks Logo" className="w-64 drop-shadow-lg" />
+          
+          {/* Badge "PACK 10" - Badge Bianco */}
+          <div className="mt-5 inline-flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-full border-2 border-black/5 shadow-sm">
+            <span className="text-[10px] font-black tracking-widest text-black/40 uppercase">Prezzo</span>
+            <div className="flex items-center gap-1">
+                <span className="font-black text-xl">{packCost}</span>
+                <span className="text-lg">🪙</span>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <button onClick={claimDaily} disabled={busy || isRevealing} className="ink-action disabled:opacity-40">+20 daily</button>
-          <button onClick={stage === "idle" ? start : skip} disabled={busy || isRevealing} className="ink-action disabled:opacity-40">{stage === "idle" ? "start" : "skip"}</button>
+        {/* Area Bottoni Azione (Daily) */}
+        <div className="mt-6 flex justify-center">
+            <button 
+                onClick={claimDaily} 
+                disabled={busy || isRevealing} 
+                className="group relative px-6 py-2.5 bg-yellow-400 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all disabled:opacity-50 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:shadow-[4px_4px_0px_rgba(0,0,0,1)]"
+            >
+                <div className="flex items-center gap-2">
+                    <span className="text-xl group-hover:rotate-12 transition-transform">🎁</span>
+                    <span className="font-black text-black text-lg tracking-tight">Daily +20</span>
+                </div>
+            </button>
         </div>
 
-        <div className="mt-16 flex flex-col items-center">
+        {/* Area Pacco */}
+        <div className="mt-12 flex flex-col items-center">
           <div className="relative pack-shadow">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
           </div>
           
-          {/* RIMOSSO: Testo 'tap tap tap' rimosso. Appare testo solo se idle. */}
-          <div className="mt-6 text-sm muted font-black h-6">
-            {stage === "idle" ? "tocca il pacco per aprire" : ""}
+          <div className="mt-8 text-sm muted font-black h-6 animate-pulse">
+            {stage === "idle" ? "tocca il pacco!" : ""}
           </div>
         </div>
       </div>
 
+      {/* Rivelazione Gatto (Invariato) */}
       <AnimatePresence>
         {stage === "reveal" && lastCat && (
           <motion.div
