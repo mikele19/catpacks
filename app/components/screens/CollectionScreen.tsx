@@ -17,12 +17,11 @@ type Cat = {
 type Owned = {
   cat_id: string;
   count: number;
-  latest_acquired_at: string;
 };
 
 function rarityGradient(r: Exclude<Rarity, "all">) {
   switch (r) {
-    case "common": return "from-slate-400 to-slate-500"; // Modificato per visibilità
+    case "common": return "from-slate-400 to-slate-500";
     case "rare": return "from-blue-400 to-blue-600";
     case "epic": return "from-purple-500 to-purple-700";
     case "legendary": return "from-yellow-400 to-orange-500";
@@ -38,24 +37,38 @@ export default function CollectionScreen() {
   const [rarity, setRarity] = useState<Rarity>("all");
   const [selected, setSelected] = useState<(Cat & { owned?: Owned }) | null>(null);
 
+  // Scarica i dati dal DB (Catalogo + Inventario Utente)
+  const fetchData = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+
+    // 1. Prendi il Catalogo (Tutti i gatti possibili)
+    const { data: catalog } = await supabase
+      .from("cats_catalog")
+      .select("*")
+      .order("base_value", { ascending: true });
+
+    // 2. Prendi l'Inventario (Gatti posseduti)
+    const { data: inv } = await supabase
+      .from("user_cats")
+      .select("cat_id")
+      .eq("user_id", userData.user.id);
+
+    const map: Record<string, Owned> = {};
+    for (const row of inv ?? []) {
+      map[row.cat_id] ??= { cat_id: row.cat_id, count: 0 };
+      map[row.cat_id].count++;
+    }
+
+    setCats((catalog ?? []) as Cat[]);
+    setOwnedMap(map);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
-
-      const { data: catalog } = await supabase.from("cats_catalog").select("*").order("base_value", { ascending: true });
-      const { data: inv } = await supabase.from("user_cats").select("*").eq("user_id", userData.user.id);
-
-      const map: Record<string, Owned> = {};
-      for (const row of inv ?? []) {
-        map[row.cat_id] ??= { cat_id: row.cat_id, count: 0, latest_acquired_at: row.acquired_at };
-        map[row.cat_id].count++;
-      }
-
-      setCats((catalog ?? []) as Cat[]);
-      setOwnedMap(map);
-      setLoading(false);
-    })();
+    fetchData();
+    // NESSUN Realtime qui. Semplice e pulito.
+    // Se trovi un gatto nuovo, ricarica la pagina per vederlo qui.
   }, []);
 
   const filtered = useMemo(() => {
@@ -64,7 +77,6 @@ export default function CollectionScreen() {
   }, [cats, query, rarity]);
 
   return (
-    // MODIFICA: Rimosso bg-black/gradient, aggiunto text-black per leggere su giallo
     <div className="min-h-screen pb-28 text-black">
       <div className="max-w-md mx-auto px-5 pt-10">
 
@@ -74,7 +86,6 @@ export default function CollectionScreen() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Cerca un gatto…"
-          // Input adattato per sfondo chiaro (sfondo bianco semitrasparente)
           className="mt-4 w-full rounded-xl bg-white/60 border border-black/10 px-4 py-3 font-bold outline-none placeholder:text-black/40 shadow-sm focus:bg-white transition"
         />
 
@@ -96,14 +107,13 @@ export default function CollectionScreen() {
 
         <div className="mt-6 grid grid-cols-2 gap-4">
           {loading ? (
-            <div className="font-black text-black/50">Caricamento…</div>
+            <div className="font-black text-black/50">Caricamento catalogo...</div>
           ) : (
             filtered.map((c) => {
               const owned = ownedMap[c.id];
               return (
                 <button key={c.id} onClick={() => setSelected({ ...c, owned })}>
                   <div className={`rounded-2xl p-[3px] shadow-sm bg-gradient-to-br ${rarityGradient(c.rarity)}`}>
-                    {/* Le card rimangono scure all'interno per far risaltare l'immagine */}
                     <div className="rounded-2xl bg-white overflow-hidden relative h-full">
                       <img
                         src={c.image_url}
