@@ -211,14 +211,10 @@ export default function HomeScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
               )}
             </AnimatePresence>
 
-            <motion.button
-              onClick={stage === "idle" ? start : tap}
-              disabled={busy && stage === "idle"}
-              className="pack-shadow"
-              whileTap={{ scale: 0.985, rotate: stage === "charging" ? -0.3 : 0 }}
-            >
-              <PackArt state={stage === "idle" ? "idle" : stage === "charging" ? "charging" : "opening"} />
-            </motion.button>
+            <div className="pack-shadow">
+              <PackArt />
+            </div>
+
           </div>
 
           <div className="mt-4 text-sm muted font-black">

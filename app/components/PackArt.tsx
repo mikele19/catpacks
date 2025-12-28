@@ -1,43 +1,77 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function PackArt({
-  state,
-}: {
-  state: "idle" | "charging" | "opening";
-}) {
-  const shake =
-    state === "charging"
-      ? { rotate: [0, -1.2, 1.2, -1.2, 1.2, 0], y: [0, -0.5, 0.5, -0.5, 0.5, 0] }
-      : { rotate: 0, y: 0 };
+export default function PackArt() {
+  const [taps, setTaps] = useState(0);
+  const [state, setState] = useState<
+    "closed" | "opened" | "reveal"
+  >("closed");
 
-  const pulse =
-    state === "opening"
-      ? { scale: [1, 1.04, 0.98] }
-      : { scale: 1 };
+  // handle tap
+  const handleTap = () => {
+    if (state !== "closed") return;
 
-  const packSrc =
-    state === "opening"
-      ? "/ui/pack-open.svg"
-      : state === "charging"
-      ? "/ui/pack-cracked.svg"
-      : "/ui/pack-closed.svg";
+    setTaps((t) => t + 1);
+  };
+
+  // when taps reach 3 → open
+  useEffect(() => {
+    if (taps === 3) {
+      setState("opened");
+
+      setTimeout(() => {
+        setState("reveal");
+      }, 1000);
+    }
+  }, [taps]);
 
   return (
-    <motion.div
-      animate={{ ...shake, ...pulse }}
-      transition={{ duration: 0.35 }}
-      className="relative w-[230px] h-[300px]"
-    >
-      <img
-        src={packSrc}
-        alt="Pack"
-        draggable={false}
-        className={`w-full h-full select-none ${
-          state === "idle" ? "animate-pack-breathe" : ""
-        }`}
+    <div className="relative flex items-center justify-center h-[400px]">
+      {/* SCATOLA */}
+      <motion.img
+        src={
+          state === "closed"
+            ? "/pack/box-closed.png"
+            : "/pack/box-open.png"
+        }
+        onClick={handleTap}
+        className="w-[240px] select-none"
+        animate={{
+          scale:
+            state === "closed" && taps > 0
+              ? [1, 1.05, 1]
+              : 1,
+        }}
+        transition={{ duration: 0.2 }}
       />
-    </motion.div>
+
+      {/* FLASH */}
+      <AnimatePresence>
+        {state === "reveal" && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0.8 }}
+            animate={{ scale: 6, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="absolute inset-0 bg-white rounded-full z-20"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* GATTO */}
+      <AnimatePresence>
+        {state === "reveal" && (
+          <motion.img
+            src="/cats/cat-legendary.png"
+            initial={{ scale: 0.2, opacity: 0, y: 40 }}
+            animate={{ scale: 1, opacity: 1, y: -20 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="absolute z-30 w-[180px]"
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
