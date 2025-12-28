@@ -55,19 +55,16 @@ export default function SwipeTabs({
 
   return (
     <div
-      ref={ref}
-      className="
-        relative min-h-screen overflow-x-auto overflow-y-hidden
-        flex
-        snap-x snap-mandatory
-        scroll-smooth
-        [-webkit-overflow-scrolling:touch]
-      "
-      style={{
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-    >
+  ref={ref}
+  className={`
+    relative min-h-screen overflow-x-auto overflow-y-hidden
+    flex
+    snap-x snap-mandatory
+    scroll-smooth
+    [-webkit-overflow-scrolling:touch]
+  `}
+>
+
       {/* hide scrollbar (webkit) */}
       <style jsx>{`
         div::-webkit-scrollbar {
