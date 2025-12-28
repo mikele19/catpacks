@@ -34,10 +34,8 @@ export default function HomeScreen({
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [busy, setBusy] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
-  
   const [stage, setStage] = useState<"idle" | "charging" | "opening" | "reveal">("idle");
   const [taps, setTaps] = useState(0);
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
@@ -151,55 +149,70 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      <div className={`px-5 pt-8 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
+      <div className={`px-4 pt-6 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
-        {/* 1. LOGO PRINCIPALE (Più grande e largo) */}
-        <div className="flex justify-center mb-8">
-          <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" /> {/* MODIFICA: w-64 -> w-80, drop-shadow-lg -> drop-shadow-xl */}
-        </div>
-
-        {/* 2. GRIGLIA INFO & AZIONI (Layout Unificato 2x2) */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* 1. HEADER UNIFICATO (Monete + Player) e DAILY a destra */}
+        <div className="flex items-center justify-center gap-3 w-full">
             
-            {/* Cella 1: Monete */}
-            <div className="sticker px-3 py-3 flex items-center justify-center gap-2 shadow-sm h-[56px]">
-                <span className="text-2xl">🪙</span><div className="font-black text-xl leading-none">{credits}</div>
-            </div>
+            {/* Blocco Unico: Monete a sinistra, Player a destra */}
+            <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
+                {/* Pillola Monete */}
+                <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
+                    <span className="text-lg leading-none">🪙</span>
+                    <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
+                </div>
 
-            {/* Cella 2: Player */}
-            <button className="sticker px-3 py-3 flex items-center justify-center gap-3 active:scale-[0.99] transition shadow-sm h-[56px]">
-                <div className="h-8 w-8 rounded-full border-2 border-black/10 bg-white/70 flex items-center justify-center font-black text-sm">{initials}</div>
-                <div className="text-sm font-black text-black/60">Player</div>
-            </button>
-
-            {/* Cella 3: Prezzo */}
-            <div className="sticker px-3 py-3 flex flex-col items-center justify-center shadow-sm h-[56px]">
-                <span className="text-[9px] font-black tracking-widest text-black/40 uppercase leading-none mb-1">Prezzo</span>
-                <div className="flex items-center gap-1 leading-none">
-                    <span className="font-black text-lg">{packCost}</span>
-                    <span className="text-sm">🪙</span>
+                {/* Info Player */}
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-black text-xs text-gray-600">
+                        {initials}
+                    </div>
+                    <span className="text-sm font-black text-black/70">Player</span>
                 </div>
             </div>
 
-            {/* Cella 4: Daily Bonus */}
+            {/* Bottone Daily (+20) */}
             <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
-                className="sticker px-3 py-3 flex items-center justify-center gap-2 bg-yellow-300 active:scale-[0.99] transition shadow-sm h-[56px] disabled:opacity-50"
+                className="sticker h-[54px] px-4 flex items-center justify-center gap-1 bg-yellow-300 active:scale-[0.95] transition shadow-md rounded-2xl disabled:opacity-50 border-2 border-white"
             >
                 <span className="text-xl">🎁</span>
-                <span className="font-black text-black text-lg leading-none">+20 Daily</span>
+                <div className="flex flex-col items-start leading-none">
+                    <span className="font-black text-[10px] text-yellow-800 uppercase tracking-wide">Daily</span>
+                    <span className="font-black text-black text-lg">+20</span>
+                </div>
             </button>
         </div>
 
-        {/* Area Pacco */}
-        <div className="mt-12 flex flex-col items-center">
-          <div className="relative pack-shadow">
+        {/* 2. LOGO PRINCIPALE */}
+        <div className="flex justify-center mt-6 mb-4">
+          <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" />
+        </div>
+
+        {/* 3. AREA PACCO */}
+        <div className="mt-8 flex flex-col items-center justify-center min-h-[350px]">
+          <div className="relative pack-shadow scale-110">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
           </div>
           
-          <div className="mt-8 text-sm muted font-black h-6 animate-pulse">
-            {stage === "idle" ? "tocca il pacco!" : ""}
+          {/* 4. PREZZO AL POSTO DI "TOCCA IL PACCO" */}
+          {/* Questo div ha un'altezza fissa per evitare salti di layout */}
+          <div className="mt-10 h-12 flex items-center justify-center">
+            {stage === "idle" && (
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="sticker px-5 py-2 flex items-center gap-3 bg-white/90 backdrop-blur shadow-sm rounded-full border-2 border-white/50"
+                >
+                    <span className="text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">Prezzo</span>
+                    <div className="w-px h-4 bg-black/10"></div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="font-black text-xl text-black">{packCost}</span>
+                        <span className="text-lg">🪙</span>
+                    </div>
+                </motion.div>
+            )}
           </div>
         </div>
       </div>
