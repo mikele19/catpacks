@@ -29,7 +29,8 @@ function rarityGradient(r: Exclude<Rarity, "all">) {
   }
 }
 
-export default function CollectionScreen() {
+// AGGIUNTO: prop "isActive" per sapere quando la pagina è visibile
+export default function CollectionScreen({ isActive }: { isActive?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [cats, setCats] = useState<Cat[]>([]);
   const [ownedMap, setOwnedMap] = useState<Record<string, Owned>>({});
@@ -38,16 +39,19 @@ export default function CollectionScreen() {
   const [selected, setSelected] = useState<(Cat & { owned?: Owned }) | null>(null);
 
   const fetchData = async () => {
+    // Non mettiamo setLoading(true) qui per evitare sfarfallii ogni volta che cambi tab
+    // Lo facciamo silenziosamente in background
+    
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
 
-    // 1. Prendi il Catalogo GIUSTO
+    // 1. Catalogo
     const { data: catalog } = await supabase
-      .from("cats_catalog") // <--- CORRETTO (Non usare "cats")
+      .from("cats_catalog")
       .select("*")
       .order("base_value", { ascending: true });
 
-    // 2. Prendi l'Inventario
+    // 2. Inventario
     const { data: inv } = await supabase
       .from("user_cats")
       .select("cat_id")
@@ -64,8 +68,16 @@ export default function CollectionScreen() {
     setLoading(false);
   };
 
+  // MODIFICA: Questo effetto parte all'inizio E ogni volta che "isActive" diventa true
   useEffect(() => {
-    fetchData();
+    if (isActive) {
+      fetchData();
+    }
+  }, [isActive]);
+
+  // Caricamento iniziale di sicurezza
+  useEffect(() => {
+      fetchData();
   }, []);
 
   const filtered = useMemo(() => {
@@ -74,9 +86,8 @@ export default function CollectionScreen() {
   }, [cats, query, rarity]);
 
   return (
-    // MODIFICA: h-full e overflow-y-auto. Questo abilita lo scroll SOLO qui dentro.
     <div className="h-full w-full overflow-y-auto text-black">
-      <div className="max-w-md mx-auto px-5 pt-10 pb-32"> {/* pb-32 essenziale per non finire sotto il menu */}
+      <div className="max-w-md mx-auto px-5 pt-10 pb-32">
 
         <h1 className="text-4xl font-black tracking-tight drop-shadow-sm">Collezione</h1>
 
@@ -105,7 +116,7 @@ export default function CollectionScreen() {
 
         <div className="mt-6 grid grid-cols-2 gap-4">
           {loading ? (
-            <div className="font-black text-black/50">Caricamento catalogo...</div>
+            <div className="font-black text-black/50">Aggiornamento...</div>
           ) : (
             filtered.map((c) => {
               const owned = ownedMap[c.id];
@@ -116,9 +127,7 @@ export default function CollectionScreen() {
                   className={`relative transition-transform ${!owned ? 'opacity-80' : 'active:scale-95'}`}
                 >
                   <div className={`rounded-2xl p-[3px] shadow-sm bg-gradient-to-br ${rarityGradient(c.rarity)}`}>
-                    
                     <div className="rounded-2xl bg-white overflow-hidden relative h-full">
-                      
                       <div className="relative h-40 w-full bg-gray-100 overflow-hidden flex items-center justify-center">
                         <img
                           src={c.image_url}
@@ -130,21 +139,17 @@ export default function CollectionScreen() {
                             }
                           `}
                         />
-
                         {!owned && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                             <span className="text-4xl drop-shadow-md">🔒</span>
                           </div>
                         )}
                       </div>
-
                       <div className="p-3 bg-white text-left relative z-20">
                         <div className={`font-black leading-tight ${!owned ? "text-black/40" : ""}`}>
                           {owned ? c.name : "???"}
                         </div>
-                        
                         <div className="text-xs text-black/50 font-bold mt-1">Valore {c.base_value}</div>
-                        
                         {owned && (
                            <div className="absolute top-2 right-2 bg-yellow-400 text-black text-xs font-black px-2 py-1 rounded-full shadow-sm">
                              x{owned.count}

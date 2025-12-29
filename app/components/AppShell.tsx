@@ -53,6 +53,9 @@ export default function AppShell() {
   }
 
   // SE SIAMO LOGGATI -> Mostra l'APP
+  // ... resto del codice in alto ...
+
+  // SE SIAMO LOGGATI -> Mostra l'APP
   return (
     <div 
       className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat text-black"
@@ -66,7 +69,12 @@ export default function AppShell() {
           onRedeem={handleRedeem}
         />
 
-        <CollectionScreen key="collection" />
+        {/* MODIFICA QUI: Passiamo "isActive" che è true solo se il tab è "collection" */}
+        <CollectionScreen 
+           key="collection" 
+           isActive={tab === "collection"} 
+        />
+        
         <ProfileScreen key="profile" />
       </SwipeTabs>
 
