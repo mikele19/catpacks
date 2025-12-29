@@ -2,89 +2,91 @@ import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-const DROP_RATES = {
-  common: 60,
-  rare: 25,
-  epic: 10,
-  legendary: 4,
-  mythic: 1
+// --- CONFIGURAZIONE PACCHI ---
+// Qui definiamo costi e probabilità per ogni tipo di cassa
+const PACK_TIERS: Record<string, { cost: number, rates: any }> = {
+  'basic': {
+    cost: 10,
+    rates: { common: 70, rare: 25, epic: 4, legendary: 0.9, mythic: 0.1 }
+  },
+  'advanced': {
+    cost: 50,
+    rates: { common: 40, rare: 45, epic: 12, legendary: 2.5, mythic: 0.5 }
+  },
+  'elite': {
+    cost: 200,
+    rates: { common: 0, rare: 40, epic: 45, legendary: 13, mythic: 2 }
+  },
+  'god': {
+    cost: 1000,
+    rates: { common: 0, rare: 0, epic: 30, legendary: 60, mythic: 10 }
+  }
 };
 
-function pickRarity() {
+function pickRarity(tier: string) {
+  const rates = PACK_TIERS[tier].rates;
   const rand = Math.random() * 100;
   let sum = 0;
-  if (rand < (sum += DROP_RATES.common)) return "common";
-  if (rand < (sum += DROP_RATES.rare)) return "rare";
-  if (rand < (sum += DROP_RATES.epic)) return "epic";
-  if (rand < (sum += DROP_RATES.legendary)) return "legendary";
+  
+  if (rand < (sum += rates.common)) return "common";
+  if (rand < (sum += rates.rare)) return "rare";
+  if (rand < (sum += rates.epic)) return "epic";
+  if (rand < (sum += rates.legendary)) return "legendary";
   return "mythic";
 }
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
-  console.log("--- RICHIESTA APERTURA ---");
+export async function POST(req: Request) {
+  // 1. Leggi quale pacco vuole aprire l'utente
+  const body = await req.json().catch(() => ({}));
+  const packType = body.packId || 'basic'; // Default 'basic' se non specificato
 
-  // 1. RECUPERA IL TOKEN DAL CLIENT (Con await per Next.js 15)
-  const headersList = await headers(); // <--- AGGIUNTO AWAIT QUI
-  const authHeader = headersList.get("authorization");
-
-  if (!authHeader) {
-    return NextResponse.json({ error: "Manca il token di autorizzazione" }, { status: 401 });
+  // Verifica se il pacco esiste
+  if (!PACK_TIERS[packType]) {
+    return NextResponse.json({ error: "Tipo di pacco non valido" }, { status: 400 });
   }
 
-  // 2. CREA IL CLIENT SUPABASE CON IL TOKEN
+  const selectedPack = PACK_TIERS[packType];
+  const COST = selectedPack.cost;
+
+  // --- STANDARD AUTH & CHECK ---
+  const headersList = await headers();
+  const authHeader = headersList.get("authorization");
+  if (!authHeader) return NextResponse.json({ error: "No Token" }, { status: 401 });
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    }
+    { global: { headers: { Authorization: authHeader } } }
   );
 
-  // 3. VERIFICA UTENTE
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Login scaduto" }, { status: 401 });
 
-  if (authError || !user) {
-    console.error("Errore Auth:", authError);
-    return NextResponse.json({ error: "Login scaduto. Fai Logout e rientra." }, { status: 401 });
-  }
-
-  // 4. VERIFICA CREDITI
-  const COST = 10;
-  const { data: profile } = await supabase
-    .from("users_profile")
-    .select("credits")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!profile || profile.credits < COST) {
-    return NextResponse.json({ error: `Hai solo ${profile?.credits || 0} monete!` }, { status: 400 });
-  }
-
-  // 5. PESCA GATTO
-  const wonRarity = pickRarity();
+  const { data: profile } = await supabase.from("users_profile").select("credits").eq("user_id", user.id).single();
   
-  const { data: catsPool } = await supabase
-    .from("cats_catalog")
-    .select("*")
-    .eq("rarity", wonRarity);
+  if (!profile || profile.credits < COST) {
+    return NextResponse.json({ error: `Ti servono ${COST} monete per questo pacco!` }, { status: 400 });
+  }
 
-  // Fallback se catalogo vuoto
+  // --- LOGICA DI GIOCO ---
+  const wonRarity = pickRarity(packType);
+  
+  const { data: catsPool } = await supabase.from("cats_catalog").select("*").eq("rarity", wonRarity);
+
   let finalCat;
   if (!catsPool || catsPool.length === 0) {
+    // Fallback di sicurezza
     const { data: fallback } = await supabase.from("cats_catalog").select("*").eq("rarity", "common");
-    if (!fallback || fallback.length === 0) return NextResponse.json({ error: "Catalogo vuoto!" }, { status: 500 });
-    finalCat = fallback[0];
+    finalCat = fallback ? fallback[0] : null;
   } else {
     finalCat = catsPool[Math.floor(Math.random() * catsPool.length)];
   }
 
-  // 6. TRANSAZIONE (Scala soldi + Dai gatto)
+  if (!finalCat) return NextResponse.json({ error: "Errore catalogo" }, { status: 500 });
+
+  // Transazione
   await supabase.from("users_profile").update({ credits: profile.credits - COST }).eq("user_id", user.id);
   await supabase.from("user_cats").insert({ user_id: user.id, cat_id: finalCat.id });
 
