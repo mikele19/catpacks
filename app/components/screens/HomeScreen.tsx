@@ -181,7 +181,7 @@ export default function HomeScreen({
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
     {/* PRIMA C'ERA L'EMOJI, ORA METTIAMO L'IMMAGINE */}
     <img 
-      src="/ui/coin.jpg" 
+      src="/ui/coin.png" 
       alt="Coin" 
       className="w-6 h-6 object-contain rounded-full shadow-sm" 
     />
@@ -220,7 +220,7 @@ export default function HomeScreen({
           PREZZO {packCost}
           {/* ANCHE QUI SOSTITUIAMO L'EMOJI */}
           <img 
-            src="/ui/coin.jpg" 
+            src="/ui/coin.png" 
             alt="Coin" 
             className="w-4 h-4 object-contain rounded-full opacity-60 grayscale" 
           />
