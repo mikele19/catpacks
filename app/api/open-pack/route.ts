@@ -14,7 +14,7 @@ const RATES: Array<{ rarity: "common" | "rare" | "epic" | "legendary" | "mythic"
   { rarity: "rare", weight: 20 },
   { rarity: "epic", weight: 8 },
   { rarity: "legendary", weight: 1.8 },
-  { rarity: "mythic", weight: 0.2 },
+  { rarity: "mythic", weight: 90 },
 ];
 
 function pickRarity() {
