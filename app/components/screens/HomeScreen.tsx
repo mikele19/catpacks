@@ -4,53 +4,36 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
-import Box3D from "../Box3D"; // Assicurati del percorso
-import { Suspense } from "react"; // Serve per il caricamento 3D
 
-// --- CONFIGURAZIONE GRAFICA PACCHI ---
-// 1. Definisci il TIPO (così TypeScript è felice)
-type PackConfig = {
-  id: string;
-  name: string;
-  cost: number;
-  styleColor: string; // <--- Qui dichiariamo che esiste styleColor
-  hexColor: string;
-  model: string;
-};
-
-// 2. Aggiorna la lista usando "styleColor" invece di "color"
-const PACKS: PackConfig[] = [
+// --- CONFIGURAZIONE PACCHI (TORNIAMO AI PNG) ---
+const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
-    styleColor: 'bg-stone-200 border-stone-400', // <--- CAMBIATO DA color A styleColor
-    hexColor: '#a8a29e', 
-    model: '/ui/box-standard.ply' 
+    color: 'bg-stone-200 border-stone-400', 
+    img: '/ui/box-standard.png' // PNG
   },
   { 
     id: 'advanced', 
     name: 'Gold', 
     cost: 50, 
-    styleColor: 'bg-yellow-200 border-yellow-400', // <--- CAMBIATO
-    hexColor: '#facc15', 
-    model: '/ui/box-gold.ply'
+    color: 'bg-yellow-200 border-yellow-400', 
+    img: '/ui/box-gold.png'     // PNG
   },
   { 
     id: 'elite', 
     name: 'Diamond', 
     cost: 200, 
-    styleColor: 'bg-cyan-200 border-cyan-400', // <--- CAMBIATO
-    hexColor: '#22d3ee', 
-    model: '/ui/box-diamond.ply'
+    color: 'bg-cyan-200 border-cyan-400', 
+    img: '/ui/box-diamond.png'  // PNG
   },
   { 
     id: 'god', 
     name: 'Godly', 
     cost: 1000, 
-    styleColor: 'bg-purple-200 border-purple-400', // <--- CAMBIATO
-    hexColor: '#a855f7', 
-    model: '/ui/box-god.ply'
+    color: 'bg-purple-200 border-purple-400', 
+    img: '/ui/box-god.png'      // PNG
   },
 ];
 
@@ -75,14 +58,16 @@ export default function HomeScreen({
   onRedeem: (value: number) => void;
   lowPerfMode?: boolean;
 }) {
-
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   
-  // STATO PER LA SELEZIONE PACCO
+  // STATO PER IL CAROSELLO (Indice del pacco centrale)
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  // STATO PER LA SELEZIONE CONFERMATA (Quando clicchi "Apri")
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
 
-  // STATI PER L'APERTURA
+  // STATI GIOCO
   const [busy, setBusy] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [stage, setStage] = useState<"idle" | "charging" | "opening" | "reveal">("idle");
@@ -91,13 +76,16 @@ export default function HomeScreen({
 
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
 
-  // Recupera il pacco attualmente selezionato (oggetto completo)
-  const currentPack = useMemo(() => PACKS.find(p => p.id === selectedPackId), [selectedPackId]);
+  // Pacco attualmente al centro del rullo
+  const activePack = PACKS[activeIndex];
+  
+  // Pacco effettivamente in apertura (potrebbe essere diverso se l'utente cambia idea mentre zooma)
+  const openingPack = useMemo(() => PACKS.find(p => p.id === selectedPackId), [selectedPackId]);
 
   const getAuthHeader = async () => {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    if (!token) throw new Error("Sessione non valida. Rifai login.");
+    if (!token) throw new Error("Sessione non valida.");
     return { Authorization: `Bearer ${token}` };
   };
 
@@ -119,32 +107,37 @@ export default function HomeScreen({
     try { const headers = await getAuthHeader(); const res = await fetch("/api/claim-daily", { method: "POST", headers }); const json = await res.json(); if (!res.ok) throw new Error(json.error); setCredits(json.credits); vibrate(20); } finally { setBusy(false); }
   };
 
+  // LOGICA CAROSELLO (Avanti/Indietro)
+  const nextPack = () => {
+    vibrate(5);
+    setActiveIndex((prev) => (prev + 1) % PACKS.length);
+  };
+
+  const prevPack = () => {
+    vibrate(5);
+    setActiveIndex((prev) => (prev - 1 + PACKS.length) % PACKS.length);
+  };
+
+  const selectCurrentPack = () => {
+    vibrate(10);
+    setSelectedPackId(activePack.id);
+  };
+
   const doOpenPack = async () => {
     try {
-      if (!currentPack) throw new Error("Nessun pacco selezionato");
-      
+      if (!openingPack) throw new Error("Nessun pacco selezionato");
       const headers = await getAuthHeader();
-      // MODIFICA: Inviamo l'ID del pacco scelto
       const res = await fetch("/api/open-pack", { 
-        method: "POST", 
-        headers,
-        body: JSON.stringify({ packId: currentPack.id }) 
+        method: "POST", headers, body: JSON.stringify({ packId: openingPack.id }) 
       });
-
       const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Errore Server");
-      }
-
+      if (!contentType?.includes("application/json")) throw new Error("Errore Server");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Errore sconosciuto");
-
       setCredits(json.credits);
       setLastCat(json.cat);
-      
       const img = new Image();
       if (json.cat?.image_url) img.src = json.cat.image_url;
-
     } catch (err: any) {
       console.error(err);
       alert("ERRORE: " + err.message);
@@ -169,17 +162,15 @@ export default function HomeScreen({
     vibrate(6);
   };
 
-  // Reset che riporta alla selezione pacchi
   const fullReset = () => {
     setStage("idle");
     setIsRevealing(false);
     setTaps(0);
     setLastCat(null);
     setBusy(false);
-    setSelectedPackId(null); // Torna alla home
+    setSelectedPackId(null);
   };
 
-  // Reset che permette di aprirne un altro dello stesso tipo
   const softReset = () => {
     setStage("idle");
     setIsRevealing(false);
@@ -213,7 +204,7 @@ export default function HomeScreen({
   return (
     <div className="h-full w-full overflow-hidden relative text-black flex flex-col">
       
-      {/* Header Comune */}
+      {/* HEADER */}
       <div className="pt-6 px-4 z-20">
         <div className="flex items-center justify-center gap-3 w-full max-w-md mx-auto">
              <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
@@ -233,75 +224,102 @@ export default function HomeScreen({
         </div>
       </div>
 
-      <div className="flex-grow relative w-full max-w-md mx-auto">
+      <div className="flex-grow relative w-full flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
           
-          {/* FASE 1: SELEZIONE PACCHI */}
+          {/* FASE 1: RULLO SELEZIONE */}
           {!selectedPackId ? (
             <motion.div 
-              key="selection"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.1 }}
-              className="h-full flex flex-col items-center justify-center pb-32 px-4"
+              key="carousel"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.5 }} // Zoom quando selezioni
+              className="w-full flex flex-col items-center justify-center pb-20"
             >
-              <img src="/ui/logo.png" alt="Logo" className="w-64 mb-6 drop-shadow-xl" />
-              
-              <div className="grid grid-cols-2 gap-4 w-full">
-                {PACKS.map((pack) => (
-                  <button
-                  key={pack.id}
-                  onClick={() => { vibrate(10); setSelectedPackId(pack.id); }}
-                  className={`sticker relative ${pack.styleColor} border-b-4 rounded-2xl p-4 flex flex-col items-center active:scale-95 transition-transform h-48`} // Aumenta h-48 per dare spazio al 3D
-                  >
-                <div className="font-black text-lg uppercase tracking-tight text-black/70 mb-2">{pack.name}</div>
-  
-  {/* AREA 3D */}
-  <div className="w-24 h-24 mb-2"> {/* Contenitore fisso per il 3D */}
-    <Suspense fallback={<div className="w-full h-full bg-black/10 rounded-full animate-pulse"/>}>
-       <Box3D path={pack.model} colorHex={pack.hexColor} />
-    </Suspense>
-  </div>
+              <img src="/ui/logo.png" alt="Logo" className="w-56 mb-8 drop-shadow-xl" />
 
-  <div className="bg-black/10 px-3 py-1 rounded-full flex items-center gap-1 z-10">
-    <img src="/ui/coin.jpg" className="w-4 h-4 rounded-full" />
-    <span className="font-black text-sm">{pack.cost}</span>
-  </div>
-</button>
-                ))}
+              {/* IL CILINDRO */}
+              <div className="relative w-full max-w-sm h-64 flex items-center justify-center perspective-500">
+                
+                {/* Tasto Sinistra */}
+                <button onClick={prevPack} className="absolute left-2 z-30 p-4 text-3xl opacity-50 hover:opacity-100 transition">◀</button>
+
+                {/* Card Precedente (sfocata a sinistra) */}
+                <motion.div 
+                   className="absolute left-8 opacity-40 scale-75 blur-[2px] grayscale"
+                   animate={{ x: -20, rotateY: -25 }}
+                >
+                   <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32" />
+                </motion.div>
+
+                {/* Card Successiva (sfocata a destra) */}
+                <motion.div 
+                   className="absolute right-8 opacity-40 scale-75 blur-[2px] grayscale"
+                   animate={{ x: 20, rotateY: 25 }}
+                >
+                   <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-32" />
+                </motion.div>
+
+                {/* Card ATTIVA (Centrale) */}
+                <motion.div
+                  key={activeIndex}
+                  initial={{ scale: 0.8, y: 20, opacity: 0 }}
+                  animate={{ scale: 1.2, y: 0, opacity: 1, rotateY: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="z-20 relative drop-shadow-2xl"
+                >
+                  <img src={activePack.img} className="w-40 object-contain" />
+                </motion.div>
+
+                {/* Tasto Destra */}
+                <button onClick={nextPack} className="absolute right-2 z-30 p-4 text-3xl opacity-50 hover:opacity-100 transition">▶</button>
               </div>
+
+              {/* Info Pacco Attivo */}
+              <div className="mt-8 text-center space-y-3">
+                 <div className="text-3xl font-black uppercase tracking-tight">{activePack.name}</div>
+                 
+                 <div className="flex items-center justify-center gap-2 bg-white/60 px-5 py-2 rounded-full mx-auto w-max backdrop-blur-sm">
+                    <img src="/ui/coin.jpg" className="w-5 h-5 rounded-full" />
+                    <span className="font-black text-xl">{activePack.cost}</span>
+                 </div>
+
+                 <button 
+                    onClick={selectCurrentPack}
+                    className={`mt-4 ${activePack.color} border-b-4 text-black px-10 py-3 rounded-2xl font-black text-xl uppercase tracking-widest shadow-lg active:translate-y-1 active:shadow-none active:border-b-0 transition-all`}
+                 >
+                    SCEGLI
+                 </button>
+              </div>
+
             </motion.div>
           ) : (
             
             /* FASE 2: APERTURA (ZOOMED IN) */
             <motion.div 
               key="opening"
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="h-full flex flex-col items-center justify-center pb-32 w-full"
+              exit={{ opacity: 0 }}
+              className="h-full w-full flex flex-col items-center justify-center pb-32"
             >
-              {/* Tasto Indietro */}
               <button 
                 onClick={() => setSelectedPackId(null)}
                 disabled={busy}
-                className="absolute top-0 left-4 bg-white p-2 rounded-full shadow-md font-black text-xs z-30 disabled:opacity-0 transition-opacity"
+                className="absolute top-0 left-4 bg-white/80 p-2 px-4 rounded-full shadow-md font-black text-xs z-30 flex items-center gap-1"
               >
-                ◀ INDIETRO
+                ◀ CAMBIA PACCO
               </button>
 
               <div className="relative pack-shadow scale-125">
-                <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
+                {/* Mostriamo l'immagine ferma finché non si apre */}
+                <PackArt state={stage} onTap={tap} shakeTrigger={taps} customImage={openingPack?.img} />
               </div>
               
               <div className="mt-12 h-12 flex flex-col items-center justify-center">
-                {stage === "idle" && currentPack && (
+                {stage === "idle" && openingPack && (
                     <>
-                      <div className="text-2xl font-black uppercase tracking-widest mb-2">{currentPack.name}</div>
-                      <div className="flex items-center gap-2 bg-white/50 px-4 py-1 rounded-full">
-                          <img src="/ui/coin.jpg" className="w-5 h-5 rounded-full" />
-                          <span className="font-black text-xl">{currentPack.cost}</span>
-                      </div>
+                      <div className="text-2xl font-black uppercase tracking-widest mb-2">{openingPack.name}</div>
                       <div className="text-xs font-bold opacity-50 mt-2 animate-pulse">Tocca il pacco per aprire</div>
                     </>
                 )}
@@ -333,7 +351,7 @@ export default function HomeScreen({
                   initial={{ rotate: -5 }}
                   animate={{ rotate: 0, transition: {duration: 0.5} }}
                 />
-              </div>
+            </div>
 
               <div className="sticker bg-white p-6 mt-8 w-full max-w-sm text-center relative z-20 shadow-2xl rounded-3xl">
                   <div className="text-3xl font-black mb-1">{lastCat.name}</div>
@@ -346,7 +364,7 @@ export default function HomeScreen({
                       Esci
                     </button>
                     <button onClick={softReset} className="bg-yellow-400 border-2 border-black rounded-xl font-black shadow-[2px_2px_0px_black] active:translate-y-0.5 active:shadow-none transition">
-                      Aprine un altro
+                      Di nuovo
                     </button>
                   </div>
               </div>
@@ -358,6 +376,7 @@ export default function HomeScreen({
       <style jsx global>{`
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        .perspective-500 { perspective: 500px; }
         .rarity-common { color: #6b7280; }
         .rarity-rare { color: #3b82f6; }
         .rarity-epic { color: #a855f7; }
