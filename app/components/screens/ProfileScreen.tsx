@@ -7,7 +7,6 @@ export default function ProfileScreen({ lowPerfMode }: { lowPerfMode?: boolean }
   const [email, setEmail] = useState("");
 
   useEffect(() => {
-    // Recupera l'email dell'utente loggato per mostrarla
     (async () => {
         const { data } = await supabase.auth.getUser();
         if(data.user) setEmail(data.user.email || "");
@@ -15,18 +14,16 @@ export default function ProfileScreen({ lowPerfMode }: { lowPerfMode?: boolean }
   }, []);
 
   const handleLogout = async () => {
-    // Questo comando disconnette l'utente.
-    // AppShell rileverà il cambiamento e mostrerà la LoginScreen.
     await supabase.auth.signOut();
   };
 
   return (
-    <div className="min-h-screen text-black pb-28">
+    // MODIFICA: h-full e overflow-hidden. Niente min-h-screen.
+    <div className="h-full w-full overflow-hidden text-black">
       <div className="px-5 pt-10 max-w-md mx-auto">
         
         <h1 className="text-4xl font-black tracking-tight drop-shadow-sm mb-6">Profilo</h1>
         
-        {/* Info Utente */}
         <div className="sticker bg-white/80 p-6 shadow-sm rounded-3xl backdrop-blur-sm mb-4">
             <div className="text-xl font-black mb-1">Giocatore</div>
             <div className="text-sm font-bold text-black/50">{email}</div>
@@ -43,7 +40,6 @@ export default function ProfileScreen({ lowPerfMode }: { lowPerfMode?: boolean }
             </div>
         </div>
 
-        {/* Tasto Logout */}
         <div className="sticker bg-white/80 p-6 shadow-sm rounded-3xl backdrop-blur-sm flex items-center justify-between">
             <div className="font-black text-lg">Sessione</div>
             <button 

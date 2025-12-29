@@ -37,18 +37,15 @@ export default function CollectionScreen() {
   const [rarity, setRarity] = useState<Rarity>("all");
   const [selected, setSelected] = useState<(Cat & { owned?: Owned }) | null>(null);
 
-  // Scarica i dati dal DB
   const fetchData = async () => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
 
-    // 1. Prendi il Catalogo
     const { data: catalog } = await supabase
       .from("cats_catalog")
       .select("*")
       .order("base_value", { ascending: true });
 
-    // 2. Prendi l'Inventario
     const { data: inv } = await supabase
       .from("user_cats")
       .select("cat_id")
@@ -75,8 +72,9 @@ export default function CollectionScreen() {
   }, [cats, query, rarity]);
 
   return (
-    <div className="min-h-screen pb-28 text-black">
-      <div className="max-w-md mx-auto px-5 pt-10">
+    // MODIFICA: h-full e overflow-y-auto. Questo abilita lo scroll SOLO qui dentro.
+    <div className="h-full w-full overflow-y-auto text-black">
+      <div className="max-w-md mx-auto px-5 pt-10 pb-32"> {/* pb-32 essenziale per non finire sotto il menu */}
 
         <h1 className="text-4xl font-black tracking-tight drop-shadow-sm">Collezione</h1>
 
@@ -112,7 +110,6 @@ export default function CollectionScreen() {
               return (
                 <button 
                   key={c.id} 
-                  // Se non ce l'hai, il click non apre il dettaglio (oppure puoi lasciarlo aprire)
                   onClick={() => owned ? setSelected({ ...c, owned }) : null}
                   className={`relative transition-transform ${!owned ? 'opacity-80' : 'active:scale-95'}`}
                 >
@@ -120,21 +117,18 @@ export default function CollectionScreen() {
                     
                     <div className="rounded-2xl bg-white overflow-hidden relative h-full">
                       
-                      {/* CONTENITORE IMMAGINE */}
                       <div className="relative h-40 w-full bg-gray-100 overflow-hidden flex items-center justify-center">
                         <img
                           src={c.image_url}
                           alt={c.name}
-                          // MODIFICA QUI: Effetto Blur + Grayscale se non posseduto
                           className={`h-full w-full object-contain transition-all duration-500
                             ${owned 
                               ? "scale-100 blur-0 grayscale-0 opacity-100" 
-                              : "scale-110 blur-[8px] grayscale opacity-40" // Effetto vedi/non vedi
+                              : "scale-110 blur-[8px] grayscale opacity-40"
                             }
                           `}
                         />
 
-                        {/* OVERLAY LUCCHETTO SE NON POSSEDUTO */}
                         {!owned && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                             <span className="text-4xl drop-shadow-md">🔒</span>
@@ -143,7 +137,6 @@ export default function CollectionScreen() {
                       </div>
 
                       <div className="p-3 bg-white text-left relative z-20">
-                        {/* Se non ce l'hai, nascondi il nome con ??? oppure mostralo sfumato */}
                         <div className={`font-black leading-tight ${!owned ? "text-black/40" : ""}`}>
                           {owned ? c.name : "???"}
                         </div>

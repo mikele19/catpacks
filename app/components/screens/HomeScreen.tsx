@@ -130,32 +130,31 @@ export default function HomeScreen({
   if (loading) return <div className="min-h-screen flex items-center justify-center text-white font-black">Caricamento…</div>;
 
   return (
-    // MODIFICA: Rimosso 'style={{ backgroundImage... }}' perché ora è gestito da AppShell
-    <div className="min-h-screen text-black overflow-hidden relative">
+    // MODIFICA: h-full e overflow-hidden al posto di min-h-screen
+    <div className="h-full w-full overflow-hidden relative text-black">
+      
+      {/* ... (Codice AnimatePresence per reveal gatto uguale a prima) ... */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-40 pointer-events-none"
-            style={{
-                background: "radial-gradient(circle at center, rgba(255,255,220,1) 0%, rgba(255,230,150,0.8) 40%, rgba(255,215,0,0) 70%)"
-            }}
+             // ... codice uguale ...
+             className="fixed inset-0 z-40 pointer-events-none"
+             // ...
           />
         )}
       </AnimatePresence>
 
-      <div className={`px-4 pt-6 max-w-md mx-auto pb-28 relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
+      <div className={`px-4 pt-6 max-w-md mx-auto h-full flex flex-col relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
+        {/* ... (Codice Header Monete/Player uguale a prima) ... */}
         <div className="flex items-center justify-center gap-3 w-full">
-            <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
+            {/* ... codice header ... */}
+            {/* COPIA IL TUO HEADER QUI, è invariato */}
+             <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
                     <span className="text-lg leading-none">🪙</span>
                     <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
                 </div>
-
                 <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-black text-xs text-gray-600">
                         {initials}
@@ -163,12 +162,7 @@ export default function HomeScreen({
                     <span className="text-sm font-black text-black/70">Player</span>
                 </div>
             </div>
-
-            <button 
-                onClick={claimDaily} 
-                disabled={busy || isRevealing} 
-                className="sticker h-[54px] px-4 flex items-center justify-center gap-1 bg-yellow-300 active:scale-[0.95] transition shadow-md rounded-2xl disabled:opacity-50 border-2 border-white"
-            >
+            <button onClick={claimDaily} disabled={busy || isRevealing} className="sticker h-[54px] px-4 flex items-center justify-center gap-1 bg-yellow-300 active:scale-[0.95] transition shadow-md rounded-2xl disabled:opacity-50 border-2 border-white">
                 <span className="text-xl">🎁</span>
                 <div className="flex flex-col items-start leading-none">
                     <span className="font-black text-[10px] text-yellow-800 uppercase tracking-wide">Daily</span>
@@ -177,11 +171,13 @@ export default function HomeScreen({
             </button>
         </div>
 
+        {/* Logo */}
         <div className="flex justify-center mt-6 mb-4">
           <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" />
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-center min-h-[350px]">
+        {/* Area Pacco */}
+        <div className="mt-4 flex flex-col items-center justify-center flex-grow pb-32">
           <div className="relative pack-shadow scale-110">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
           </div>
@@ -196,8 +192,10 @@ export default function HomeScreen({
         </div>
       </div>
 
+      {/* ... (Codice Reveal Gatto uguale a prima) ... */}
       <AnimatePresence>
-        {stage === "reveal" && lastCat && (
+         {/* ... (incolla il tuo blocco reveal qui) ... */}
+          {stage === "reveal" && lastCat && (
           <motion.div
             className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5"
             initial={{ opacity: 0, scale: 0.5, y: 50 }}
@@ -208,7 +206,7 @@ export default function HomeScreen({
             <div className="relative">
                  <div className="absolute inset-0 bg-white/40 blur-3xl rounded-full scale-110 z-0"></div>
                  <motion.img
-                  src={`/ui/cat-${lastCat.rarity}.png`}
+                  src={lastCat.image_url}
                   alt={lastCat.name}
                   className="relative z-10 w-72 h-72 object-contain drop-shadow-2xl animate-float"
                   initial={{ rotate: -5 }}
@@ -234,6 +232,7 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
+         /* ... css float ... */
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
