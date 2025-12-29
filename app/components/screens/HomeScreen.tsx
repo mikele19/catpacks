@@ -67,16 +67,44 @@ export default function HomeScreen({
     try { const headers = await getAuthHeader(); const res = await fetch("/api/claim-daily", { method: "POST", headers }); const json = await res.json(); if (!res.ok) throw new Error(json.error); setCredits(json.credits); vibrate(20); } finally { setBusy(false); }
   };
 
+  // --- MODIFICA FONDAMENTALE: Gestione Errori e Immagini Corrette ---
   const doOpenPack = async () => {
-    const headers = await getAuthHeader();
-    const res = await fetch("/api/open-pack", { method: "POST", headers });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Errore apertura");
-    setCredits(json.credits);
-    setLastCat(json.cat);
-    const img = new Image();
-    img.src = `/ui/cat-${json.cat.rarity}.png`;
+    try {
+      const headers = await getAuthHeader();
+      const res = await fetch("/api/open-pack", { method: "POST", headers });
+
+      // 1. Controllo se il server risponde con HTML (Errore critico) invece di JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("ERRORE CRITICO SERVER (NON-JSON):", text);
+        throw new Error("Errore interno del server. Controlla il terminale di VS Code.");
+      }
+
+      const json = await res.json();
+      
+      // 2. Controllo se l'API ha risposto con un errore logico (es. monete insufficienti)
+      if (!res.ok) {
+        throw new Error(json.error || "Errore sconosciuto durante l'apertura");
+      }
+
+      // 3. Tutto ok: Aggiorna stato
+      setCredits(json.credits);
+      setLastCat(json.cat);
+      
+      // 4. Precarica l'immagine corretta (Usa URL dal DB, non inventato)
+      const img = new Image();
+      if (json.cat && json.cat.image_url) {
+         img.src = json.cat.image_url;
+      }
+
+    } catch (err: any) {
+      console.error("Errore doOpenPack:", err);
+      alert("ERRORE APERTURA: " + err.message); // <--- Ora vedrai il messaggio di errore!
+      throw err; // Blocca l'animazione e resetta
+    }
   };
+  // ---------------------------------------------------------------
 
   const start = () => {
     if (busy || isRevealing) return;
@@ -105,11 +133,13 @@ export default function HomeScreen({
 
       try {
         await doOpenPack();
+        // Attesa scenica
         await new Promise((r) => setTimeout(r, 500));
         setStage("reveal");
         vibrate(50);
       } catch (e) {
         console.error(e);
+        // Se c'è errore, resetta tutto
         setStage("idle");
         setIsRevealing(false);
       } finally {
@@ -130,26 +160,23 @@ export default function HomeScreen({
   if (loading) return <div className="min-h-screen flex items-center justify-center text-white font-black">Caricamento…</div>;
 
   return (
-    // MODIFICA: h-full e overflow-hidden al posto di min-h-screen
     <div className="h-full w-full overflow-hidden relative text-black">
       
-      {/* ... (Codice AnimatePresence per reveal gatto uguale a prima) ... */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
-             // ... codice uguale ...
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
              className="fixed inset-0 z-40 pointer-events-none"
-             // ...
+             style={{ background: "radial-gradient(circle, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,1) 100%)" }}
           />
         )}
       </AnimatePresence>
 
       <div className={`px-4 pt-6 max-w-md mx-auto h-full flex flex-col relative z-10 transition-opacity duration-500 ${isRevealing ? 'opacity-40 blur-sm' : 'opacity-100'}`}>
         
-        {/* ... (Codice Header Monete/Player uguale a prima) ... */}
         <div className="flex items-center justify-center gap-3 w-full">
-            {/* ... codice header ... */}
-            {/* COPIA IL TUO HEADER QUI, è invariato */}
              <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
                     <span className="text-lg leading-none">🪙</span>
@@ -171,12 +198,10 @@ export default function HomeScreen({
             </button>
         </div>
 
-        {/* Logo */}
         <div className="flex justify-center mt-6 mb-4">
           <img src="/ui/logo.png" alt="CatPacks Logo" className="w-80 drop-shadow-xl" />
         </div>
 
-        {/* Area Pacco */}
         <div className="mt-4 flex flex-col items-center justify-center flex-grow pb-32">
           <div className="relative pack-shadow scale-110">
             <PackArt state={stage} onTap={tap} shakeTrigger={taps} />
@@ -192,9 +217,7 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* ... (Codice Reveal Gatto uguale a prima) ... */}
       <AnimatePresence>
-         {/* ... (incolla il tuo blocco reveal qui) ... */}
           {stage === "reveal" && lastCat && (
           <motion.div
             className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5"
@@ -232,7 +255,6 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-         /* ... css float ... */
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
