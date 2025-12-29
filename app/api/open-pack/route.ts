@@ -3,11 +3,11 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 const DROP_RATES = {
-  common: 60,
-  rare: 25,
-  epic: 10,
-  legendary: 4,
-  mythic: 90
+  common: 0,
+  rare: 0,
+  epic: 0,
+  legendary: 0,
+  mythic: 100
 };
 
 function pickRarity() {
