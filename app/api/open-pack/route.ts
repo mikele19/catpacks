@@ -1,101 +1,99 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const PACK_COST = 10;
-
-// Drop rates (somma 100)
-const RATES: Array<{ rarity: "common" | "rare" | "epic" | "legendary" | "mythic"; weight: number }> = [
-  { rarity: "common", weight: 70 },
-  { rarity: "rare", weight: 20 },
-  { rarity: "epic", weight: 8 },
-  { rarity: "legendary", weight: 1.8 },
-  { rarity: "mythic", weight: 90 },
-];
+// Percentuali normali
+const DROP_RATES = {
+  common: 60,
+  rare: 25,
+  epic: 10,
+  legendary: 4,
+  mythic: 1
+};
 
 function pickRarity() {
-  const r = Math.random() * 100;
-  let acc = 0;
-  for (const item of RATES) {
-    acc += item.weight;
-    if (r <= acc) return item.rarity;
-  }
-  return "common";
+  const rand = Math.random() * 100;
+  let sum = 0;
+  if (rand < (sum += DROP_RATES.common)) return "common";
+  if (rand < (sum += DROP_RATES.rare)) return "rare";
+  if (rand < (sum += DROP_RATES.epic)) return "epic";
+  if (rand < (sum += DROP_RATES.legendary)) return "legendary";
+  return "mythic";
 }
 
-export async function POST(req: Request) {
-  try {
-    // 1) Auth token
-    const auth = req.headers.get("authorization");
-    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-    if (!token) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+export const dynamic = 'force-dynamic';
 
-    const { data: userRes, error: userErr } = await supabaseAdmin.auth.getUser(token);
-    if (userErr || !userRes.user) {
-      return NextResponse.json({ error: "Token non valido" }, { status: 401 });
+export async function POST() {
+  // --- MODIFICA: Creazione manuale del client (bypassiamo l'errore) ---
+  const cookieStore = cookies();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          // Passiamo i cookie manualmente così sa chi siamo
+          cookie: typeof cookieStore.toString === 'function' ? cookieStore.toString() : '', 
+        },
+      },
     }
-    const userId = userRes.user.id;
+  );
+  // -------------------------------------------------------------------
 
-    // 2) Leggi profilo credits
-    const { data: profile, error: profErr } = await supabaseAdmin
-      .from("users_profile")
-      .select("credits")
-      .eq("user_id", userId)
-      .single();
+  // 1. Verifica Utente
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (profErr || !profile) {
-      return NextResponse.json({ error: "Profilo non trovato" }, { status: 400 });
+  // 2. Verifica Crediti
+  const COST = 10;
+  const { data: profile } = await supabase.from("users_profile").select("credits").eq("user_id", user.id).single();
+  
+  if (!profile || profile.credits < COST) {
+    return NextResponse.json({ error: "Non hai abbastanza monete!" }, { status: 400 });
+  }
+
+  // 3. Pesca Rarità
+  const wonRarity = pickRarity();
+
+  // 4. PESCA DAL CATALOGO NUOVO
+  const { data: catsPool } = await supabase
+    .from("cats_catalog") 
+    .select("*")
+    .eq("rarity", wonRarity);
+
+  // Fallback se il catalogo è vuoto per quella rarità
+  if (!catsPool || catsPool.length === 0) {
+    console.error(`Nessun gatto trovato per rarità ${wonRarity}. Provo con common.`);
+    const { data: fallbackPool } = await supabase.from("cats_catalog").select("*").eq("rarity", "common");
+    
+    if (!fallbackPool || fallbackPool.length === 0) {
+       return NextResponse.json({ error: "Errore critico: Catalogo vuoto!" }, { status: 500 });
     }
-
-    if ((profile.credits ?? 0) < PACK_COST) {
-      return NextResponse.json({ error: "Crediti insufficienti" }, { status: 400 });
-    }
-
-    // 3) Pick rarity
-    const rarity = pickRarity();
-
-    // 4) Pesca un gatto dal catalogo nuovo
-    const { data: cats, error: catsErr } = await supabaseAdmin
-      .from("cats_catalog")
-      .select("id,name,rarity,image_url,base_value")
-      .eq("rarity", rarity);
-
-    if (catsErr || !cats || cats.length === 0) {
-      return NextResponse.json({ error: "Nessun gatto per questa rarità" }, { status: 500 });
-    }
-
-    const chosen = cats[Math.floor(Math.random() * cats.length)];
-
-    // 5) Scala crediti
-    const newCredits = (profile.credits ?? 0) - PACK_COST;
-
-    const { error: updErr } = await supabaseAdmin
-      .from("users_profile")
-      .update({ credits: newCredits })
-      .eq("user_id", userId);
-
-    if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
-
-    // 6) Salva inventario utente (TABella corretta per la Collezione)
-    const { error: invErr } = await supabaseAdmin.from("user_cats").insert({
-      user_id: userId,
-      cat_id: chosen.id,
-    });
-
-    if (invErr) return NextResponse.json({ error: invErr.message }, { status: 500 });
-
-    // 7) (Opzionale) log aperture se vuoi in futuro
-    // await supabaseAdmin.from("pack_open_logs").insert({ user_id: userId, cat_id: chosen.id, rarity });
+    const randomCat = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+    
+    await supabase.from("users_profile").update({ credits: profile.credits - COST }).eq("user_id", user.id);
+    await supabase.from("user_cats").insert({ user_id: user.id, cat_id: randomCat.id });
 
     return NextResponse.json({
-      credits: newCredits,
-      cat: { name: chosen.name, rarity: chosen.rarity, image_url: chosen.image_url },
+      success: true,
+      credits: profile.credits - COST,
+      cat: randomCat
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "Errore server" }, { status: 500 });
   }
+
+  // Caso normale
+  const randomCat = catsPool[Math.floor(Math.random() * catsPool.length)];
+
+  // 5. Salva Transazione
+  await supabase.from("users_profile").update({ credits: profile.credits - COST }).eq("user_id", user.id);
+  await supabase.from("user_cats").insert({ user_id: user.id, cat_id: randomCat.id });
+
+  return NextResponse.json({
+    success: true,
+    credits: profile.credits - COST,
+    cat: randomCat
+  });
 }

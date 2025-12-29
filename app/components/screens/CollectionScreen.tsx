@@ -41,11 +41,13 @@ export default function CollectionScreen() {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
 
+    // 1. Prendi il Catalogo GIUSTO
     const { data: catalog } = await supabase
-      .from("cats_catalog")
+      .from("cats_catalog") // <--- CORRETTO (Non usare "cats")
       .select("*")
       .order("base_value", { ascending: true });
 
+    // 2. Prendi l'Inventario
     const { data: inv } = await supabase
       .from("user_cats")
       .select("cat_id")
