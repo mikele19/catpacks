@@ -179,9 +179,14 @@ export default function HomeScreen({
         <div className="flex items-center justify-center gap-3 w-full">
              <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
-                    <span className="text-lg leading-none">🪙</span>
-                    <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
-                </div>
+    {/* PRIMA C'ERA L'EMOJI, ORA METTIAMO L'IMMAGINE */}
+    <img 
+      src="/ui/coin.jpg" 
+      alt="Coin" 
+      className="w-6 h-6 object-contain rounded-full shadow-sm" 
+    />
+    <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
+</div>
                 <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-black text-xs text-gray-600">
                         {initials}
@@ -209,9 +214,19 @@ export default function HomeScreen({
           
           <div className="mt-10 h-12 flex items-center justify-center">
             {stage === "idle" && (
-                <div className="text-sm font-black text-black/40 uppercase tracking-widest flex items-center gap-2">
-                    PREZZO {packCost} 🪙
-                </div>
+                <div className="mt-10 h-12 flex items-center justify-center">
+  {stage === "idle" && (
+      <div className="text-sm font-black text-black/40 uppercase tracking-widest flex items-center gap-2">
+          PREZZO {packCost}
+          {/* ANCHE QUI SOSTITUIAMO L'EMOJI */}
+          <img 
+            src="/ui/coin.jpg" 
+            alt="Coin" 
+            className="w-4 h-4 object-contain rounded-full opacity-60 grayscale" 
+          />
+      </div>
+  )}
+</div>
             )}
           </div>
         </div>
