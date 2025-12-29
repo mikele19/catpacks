@@ -1,34 +1,38 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Center, OrbitControls } from "@react-three/drei";
+import { Center, Environment } from "@react-three/drei"; // Aggiunto Environment per luci migliori
 import * as THREE from "three";
 import { PLYLoader } from "three-stdlib";
 
 function Model({ url, color }: { url: string; color: string }) {
   const meshRef = useRef<THREE.Mesh>(null);
   
-  // Carica la geometria PLY
   const geometry = useLoader(PLYLoader, url);
 
-  // Calcola le normali per la luce (se il PLY non le ha)
-  useMemo(() => geometry.computeVertexNormals(), [geometry]);
+  // Ricalcola le normali per evitare l'effetto "nero/rotto"
+  useMemo(() => {
+    geometry.computeVertexNormals();
+  }, [geometry]);
 
-  // Rotazione continua
   useFrame((_, delta) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 1.5; // Velocità rotazione
+      meshRef.current.rotation.y += delta * 1.5;
     }
   });
 
   return (
-    <mesh ref={meshRef} geometry={geometry} scale={1.8}> {/* Scala 1.8x, aggiustala se serve */}
-      {/* Materiale "Toon" lucido che prende il colore della cassa */}
+    // MODIFICA 1: Scala aumentata drasticamente (da 1.8 a 35)
+    // Se sono ancora piccoli, prova 50 o 100. Se enormi, scendi a 10.
+    <mesh ref={meshRef} geometry={geometry} scale={35}> 
+      
+      {/* MODIFICA 2: side={THREE.DoubleSide} risolve la trasparenza */}
       <meshStandardMaterial 
         color={color} 
-        roughness={0.3} 
-        metalness={0.5} 
+        roughness={0.4} 
+        metalness={0.6}
+        side={THREE.DoubleSide} 
       />
     </mesh>
   );
@@ -37,14 +41,16 @@ function Model({ url, color }: { url: string; color: string }) {
 export default function Box3D({ path, colorHex }: { path: string; colorHex: string }) {
   return (
     <div className="w-full h-full relative">
-      <Canvas camera={{ position: [0, 2, 5], fov: 50 }} gl={{ alpha: true }}>
-        {/* Luci per far sembrare l'oggetto 3D e non piatto */}
-        <ambientLight intensity={0.7} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} />
-        <pointLight position={[-10, -10, -10]} intensity={1} />
+      <Canvas camera={{ position: [0, 2, 6], fov: 45 }} gl={{ alpha: true, antialias: true }}>
+        {/* Luci potenziate per vedere bene i colori */}
+        <ambientLight intensity={1.5} />
+        <spotLight position={[10, 10, 10]} angle={0.3} penumbra={1} intensity={3} />
+        <pointLight position={[-10, -5, -10]} intensity={2} color="white" />
         
+        {/* Riflessi ambientali per far brillare il materiale */}
+        <Environment preset="city" />
+
         <Center>
-          {/* Se il file non è ancora caricato, React gestisce l'attesa */}
           <Model url={path} color={colorHex} />
         </Center>
       </Canvas>
