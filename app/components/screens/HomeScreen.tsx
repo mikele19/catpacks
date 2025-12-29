@@ -7,10 +7,10 @@ import PackArt from "../PackArt";
 
 // --- CONFIGURAZIONE GRAFICA PACCHI ---
 const PACKS = [
-  { id: 'basic', name: 'Standard', cost: 10, color: 'bg-stone-200 border-stone-400', img: '/ui/box-standard.png' }, // Usa le tue immagini qui
-  { id: 'advanced', name: 'Gold', cost: 50, color: 'bg-yellow-200 border-yellow-400', img: '/ui/box-gold.png' },
-  { id: 'elite', name: 'Diamond', cost: 200, color: 'bg-cyan-200 border-cyan-400', img: '/ui/box-diamond.png' },
-  { id: 'god', name: 'Godly', cost: 1000, color: 'bg-purple-200 border-purple-400', img: '/ui/box-god.png' },
+  { id: 'basic', name: 'Standard', cost: 10, color: 'bg-stone-200 border-stone-400', img: '/ui/box-standard.ply' }, // Usa le tue immagini qui
+  { id: 'advanced', name: 'Gold', cost: 50, color: 'bg-yellow-200 border-yellow-400', img: '/ui/box-gold.ply' },
+  { id: 'elite', name: 'Diamond', cost: 200, color: 'bg-cyan-200 border-cyan-400', img: '/ui/box-diamond.ply' },
+  { id: 'god', name: 'Godly', cost: 1000, color: 'bg-purple-200 border-purple-400', img: '/ui/box-god.ply' },
 ];
 
 type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
