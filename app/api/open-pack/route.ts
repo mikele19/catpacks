@@ -7,7 +7,7 @@ const DROP_RATES = {
   rare: 25,
   epic: 10,
   legendary: 4,
-  mythic: 1
+  mythic: 90
 };
 
 function pickRarity() {
