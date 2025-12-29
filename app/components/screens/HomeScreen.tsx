@@ -5,34 +5,34 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI (PNG) ---
+// --- CONFIGURAZIONE PACCHI ---
 const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
-    color: 'bg-stone-100 border-stone-400 text-stone-600', 
+    colorClasses: 'bg-stone-200 border-stone-500 text-stone-800', 
     img: '/ui/box-standard.png'
   },
   { 
     id: 'advanced', 
     name: 'Gold', 
     cost: 50, 
-    color: 'bg-yellow-100 border-yellow-500 text-yellow-800', 
+    colorClasses: 'bg-yellow-300 border-yellow-600 text-yellow-900', 
     img: '/ui/box-gold.png'
   },
   { 
     id: 'elite', 
     name: 'Diamond', 
     cost: 200, 
-    color: 'bg-cyan-100 border-cyan-500 text-cyan-800', 
+    colorClasses: 'bg-cyan-300 border-cyan-600 text-cyan-900', 
     img: '/ui/box-diamond.png'
   },
   { 
     id: 'god', 
     name: 'Godly', 
     cost: 1000, 
-    color: 'bg-purple-100 border-purple-500 text-purple-900', 
+    colorClasses: 'bg-purple-400 border-purple-700 text-purple-950', 
     img: '/ui/box-god.png'
   },
 ];
@@ -162,12 +162,20 @@ export default function HomeScreen({
   useEffect(() => {
     (async () => {
       if (stage !== "charging" || taps < tapsNeeded) return;
+      
+      // INIZIO FLASH
       setStage("opening");
       setIsRevealing(true);
       vibrate(30);
+
       try {
-        await doOpenPack();
-        await new Promise((r) => setTimeout(r, 500));
+        // MODIFICA: Lanciamo la chiamata al server E il timer da 0.5s INSIEME.
+        // Risultato: Il flash dura esattamente 0.5s (se la rete è veloce), poi mostra subito il gatto.
+        await Promise.all([
+            doOpenPack(),
+            new Promise((r) => setTimeout(r, 500)) 
+        ]);
+        
         setStage("reveal");
         vibrate(50);
       } catch (e) {
@@ -184,22 +192,30 @@ export default function HomeScreen({
   return (
     <div className="h-full w-full overflow-hidden relative text-black flex flex-col bg-[#FFD700]/10">
       
-      {/* --- NUOVO HEADER HUD: PIENO FINO AI BORDI --- */}
-      <div className="w-full bg-white border-b-4 border-black/10 px-5 py-4 flex items-center justify-between z-20 shadow-sm">
-         
-         {/* Monete: Squadrato con bordo deciso */}
-         <div className="flex items-center gap-2 bg-yellow-100 border-2 border-yellow-500 px-3 py-1.5 rounded-xl shadow-sm">
-            <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
-            <span className="font-black text-xl leading-none text-yellow-800 pt-0.5">{credits}</span>
+      {/* FLASH OVERLAY (Bianco che copre tutto) */}
+      <AnimatePresence>
+        {isRevealing && (
+          <motion.div
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-40 pointer-events-none"
+             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 80%)" }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* HEADER FLOTTANTE */}
+      <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20">
+         <div className="flex-1 h-14 bg-yellow-100 border-b-4 border-yellow-500 rounded-2xl flex items-center px-4 gap-3 shadow-md">
+            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain drop-shadow-sm" />
+            <span className="font-black text-2xl text-yellow-900 pt-1">{credits}</span>
          </div>
-
-         {/* Utente & Daily */}
-         <div className="flex items-center gap-3">
-             <button onClick={claimDaily} disabled={busy || isRevealing} className="bg-green-100 border-2 border-green-500 hover:bg-green-200 active:scale-95 transition h-10 px-3 rounded-xl flex items-center gap-1 shadow-sm">
-                <span className="text-lg">🎁</span>
+         <div className="flex items-center gap-2">
+             <button onClick={claimDaily} disabled={busy || isRevealing} className="h-14 w-14 bg-green-200 border-b-4 border-green-600 rounded-2xl flex items-center justify-center active:border-b-0 active:translate-y-1 transition shadow-md">
+                <span className="text-2xl drop-shadow-sm">🎁</span>
              </button>
-
-             <div className="h-10 w-10 rounded-xl bg-stone-100 border-2 border-stone-300 flex items-center justify-center font-black text-xs text-stone-500">
+             <div className="h-14 w-14 bg-stone-100 border-b-4 border-stone-400 rounded-2xl flex items-center justify-center font-black text-sm text-stone-600 shadow-md">
                 {initials}
              </div>
          </div>
@@ -218,25 +234,17 @@ export default function HomeScreen({
               exit={{ opacity: 0, scale: 1.5 }}
               className="w-full flex flex-col items-center justify-center pb-10"
             >
-              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-6 drop-shadow-xl" />
+              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-xl" />
 
               {/* CILINDRO */}
               <div className="relative w-full max-w-sm h-64 flex items-center justify-center perspective-500">
-                <button onClick={prevPack} className="absolute left-4 z-30 p-3 bg-white/50 hover:bg-white rounded-xl border-2 border-black/10 backdrop-blur-sm transition">◀</button>
+                <button onClick={prevPack} className="absolute left-4 z-30 p-3 bg-white hover:bg-gray-100 rounded-xl border-b-4 border-black/10 active:border-b-0 active:translate-y-1 transition text-xl">◀</button>
 
-                {/* Card Precedente */}
-                <motion.div 
-                   className="absolute left-8 opacity-40 scale-75 blur-[1px] grayscale"
-                   animate={{ x: -30, rotateY: -25 }}
-                >
+                {/* Cards Laterali */}
+                <motion.div className="absolute left-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -30, rotateY: -25 }}>
                    <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32 drop-shadow-lg" />
                 </motion.div>
-
-                {/* Card Successiva */}
-                <motion.div 
-                   className="absolute right-8 opacity-40 scale-75 blur-[1px] grayscale"
-                   animate={{ x: 30, rotateY: 25 }}
-                >
+                <motion.div className="absolute right-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: 30, rotateY: 25 }}>
                    <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-32 drop-shadow-lg" />
                 </motion.div>
 
@@ -251,24 +259,19 @@ export default function HomeScreen({
                   <img src={activePack.img} className="w-40 object-contain" />
                 </motion.div>
 
-                <button onClick={nextPack} className="absolute right-4 z-30 p-3 bg-white/50 hover:bg-white rounded-xl border-2 border-black/10 backdrop-blur-sm transition">▶</button>
+                <button onClick={nextPack} className="absolute right-4 z-30 p-3 bg-white hover:bg-gray-100 rounded-xl border-b-4 border-black/10 active:border-b-0 active:translate-y-1 transition text-xl">▶</button>
               </div>
 
-              {/* BOX INFO PACCO: Rettangolo deciso con bordi spessi */}
-              <div className="mt-4 flex flex-col items-center gap-4 w-full px-8">
-                 
-                 <div className="bg-white border-4 border-black/10 rounded-2xl p-4 w-full max-w-xs text-center shadow-sm">
-                     <div className="text-3xl font-black uppercase tracking-tighter text-black">{activePack.name}</div>
-                     <div className={`mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-lg font-black text-xl border-2 ${activePack.color}`}>
+              {/* BOX INFO */}
+              <div className="mt-6 flex flex-col items-center gap-4 w-full px-8">
+                 <div className={`border-b-8 rounded-3xl p-6 w-full max-w-xs text-center shadow-xl transition-colors duration-300 ${activePack.colorClasses}`}>
+                     <div className="text-3xl font-black uppercase tracking-tighter drop-shadow-sm">{activePack.name}</div>
+                     <div className="mt-3 inline-flex items-center gap-2 bg-black/10 px-4 py-1.5 rounded-xl font-black text-xl border-2 border-black/5">
                         <img src="/ui/coin.png" className="w-5 h-5" />
                         <span>{activePack.cost}</span>
                      </div>
                  </div>
-
-                 <button 
-                    onClick={selectCurrentPack}
-                    className="w-full max-w-xs bg-black text-white border-b-8 border-gray-800 active:border-b-0 active:translate-y-2 rounded-2xl py-4 font-black text-2xl uppercase tracking-widest shadow-xl transition-all"
-                 >
+                 <button onClick={selectCurrentPack} className="w-full max-w-xs bg-black text-white border-b-8 border-gray-800 active:border-b-0 active:translate-y-2 rounded-2xl py-4 font-black text-2xl uppercase tracking-widest shadow-xl transition-all">
                     SCEGLI
                  </button>
               </div>
@@ -284,13 +287,8 @@ export default function HomeScreen({
               exit={{ opacity: 0 }}
               className="h-full w-full flex flex-col items-center justify-center pb-20"
             >
-              {/* Tasto indietro deciso */}
-              <button 
-                onClick={() => setSelectedPackId(null)}
-                disabled={busy}
-                className="absolute top-4 left-4 bg-white border-2 border-black/10 px-4 py-2 rounded-xl font-black text-xs z-30 flex items-center gap-2 shadow-sm uppercase tracking-wide hover:bg-gray-50"
-              >
-                ◀ Cambia
+              <button onClick={() => setSelectedPackId(null)} disabled={busy} className="absolute top-4 left-4 bg-white border-b-4 border-stone-300 active:border-b-0 active:translate-y-1 px-4 py-2 rounded-xl font-black text-xs z-30 flex items-center gap-2 shadow-sm uppercase tracking-wide">
+                ◀ Indietro
               </button>
 
               <div className="relative pack-shadow scale-125">
@@ -302,7 +300,7 @@ export default function HomeScreen({
                     <>
                       <div className="text-3xl font-black uppercase tracking-tighter mb-2">{openingPack.name}</div>
                       <div className="text-sm font-bold bg-white/50 px-3 py-1 rounded-lg animate-pulse border-2 border-black/5">
-                        TOCCA PER APRIRE
+                        TOCCA RIPETUTAMENTE
                       </div>
                     </>
                 )}
@@ -312,7 +310,7 @@ export default function HomeScreen({
         </AnimatePresence>
       </div>
 
-      {/* MODALE DEL GATTO TROVATO */}
+      {/* MODALE DEL GATTO */}
       <AnimatePresence>
           {stage === "reveal" && lastCat && (
           <motion.div
@@ -336,7 +334,7 @@ export default function HomeScreen({
                 />
             </div>
 
-              <div className="bg-white border-4 border-black rounded-3xl p-6 w-full text-center relative z-20 shadow-[0_10px_0_rgba(0,0,0,0.2)]">
+              <div className="bg-white border-b-8 border-stone-300 rounded-3xl p-6 w-full text-center relative z-20 shadow-2xl">
                   <div className="text-3xl font-black mb-1 text-black">{lastCat.name}</div>
                   <div className={`text-sm font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border-2 border-current inline-block px-3 py-1 rounded-lg mb-6`}>
                     {lastCat.rarity}

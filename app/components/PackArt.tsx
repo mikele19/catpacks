@@ -6,14 +6,15 @@ export default function PackArt({
   state,
   onTap,
   shakeTrigger,
-  customImage // <--- 1. Nuova proprietà per ricevere l'immagine della cassa scelta
+  customImage
 }: {
   state: "idle" | "charging" | "opening" | "reveal";
   onTap: () => void;
   shakeTrigger?: number;
-  customImage?: string; // <--- Definiamo che è una stringa opzionale
+  customImage?: string;
 }) {
   
+  // Animazione Scossa
   const shake =
     state === "charging"
       ? { 
@@ -23,19 +24,15 @@ export default function PackArt({
         }
       : { rotate: 0, y: 0, scale: 1 };
 
+  // Animazione Pulsazione (durante il flash)
   const pulse =
     state === "opening"
-      ? { scale: [1, 1.1, 0.9] }
+      ? { scale: [1, 1.15, 0.9] } // Pulsazione più forte prima del "Boom"
       : { scale: 1 };
 
-  // --- 2. LOGICA IMMAGINE DINAMICA ---
-  // Se stiamo aprendo/rivelando, mostriamo la scatola aperta (generica).
-  // Se siamo chiusi (idle/charging), mostriamo l'immagine personalizzata (Oro/Diamante...) 
-  // oppure quella di default se non c'è nulla.
-  const packSrc =
-    state === "opening" || state === "reveal"
-      ? "/pack/box-open.png"
-      : (customImage || "/pack/box-closed.png"); 
+  // MODIFICA: Non mostriamo mai "box-open.png".
+  // Rimaniamo sulla cassa chiusa finché non appare il gatto sopra.
+  const packSrc = customImage || "/pack/box-closed.png";
 
   return (
     <motion.div
