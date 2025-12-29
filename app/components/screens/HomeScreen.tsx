@@ -209,7 +209,7 @@ export default function HomeScreen({
         <div className="flex items-center justify-center gap-3 w-full max-w-md mx-auto">
              <div className="sticker p-1.5 pr-5 flex items-center gap-4 rounded-full shadow-md bg-white">
                 <div className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-yellow-200">
-                    <img src="/ui/coin.jpg" alt="C" className="w-6 h-6 object-contain rounded-full shadow-sm" />
+                    <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain rounded-full shadow-sm" />
                     <span className="font-black text-lg leading-none text-yellow-800">{credits}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function HomeScreen({
                  <div className="text-3xl font-black uppercase tracking-tight">{activePack.name}</div>
                  
                  <div className="flex items-center justify-center gap-2 bg-white/60 px-5 py-2 rounded-full mx-auto w-max backdrop-blur-sm">
-                    <img src="/ui/coin.jpg" className="w-5 h-5 rounded-full" />
+                    <img src="/ui/coin.png" className="w-5 h-5 rounded-full" />
                     <span className="font-black text-xl">{activePack.cost}</span>
                  </div>
 
