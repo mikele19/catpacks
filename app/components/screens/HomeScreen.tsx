@@ -4,13 +4,54 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
+import Box3D from "../Box3D"; // Assicurati del percorso
+import { Suspense } from "react"; // Serve per il caricamento 3D
 
 // --- CONFIGURAZIONE GRAFICA PACCHI ---
-const PACKS = [
-  { id: 'basic', name: 'Standard', cost: 10, color: 'bg-stone-200 border-stone-400', img: '/ui/box-standard.ply' }, // Usa le tue immagini qui
-  { id: 'advanced', name: 'Gold', cost: 50, color: 'bg-yellow-200 border-yellow-400', img: '/ui/box-gold.ply' },
-  { id: 'elite', name: 'Diamond', cost: 200, color: 'bg-cyan-200 border-cyan-400', img: '/ui/box-diamond.ply' },
-  { id: 'god', name: 'Godly', cost: 1000, color: 'bg-purple-200 border-purple-400', img: '/ui/box-god.ply' },
+// 1. Definisci il TIPO (così TypeScript è felice)
+type PackConfig = {
+  id: string;
+  name: string;
+  cost: number;
+  styleColor: string; // <--- Qui dichiariamo che esiste styleColor
+  hexColor: string;
+  model: string;
+};
+
+// 2. Aggiorna la lista usando "styleColor" invece di "color"
+const PACKS: PackConfig[] = [
+  { 
+    id: 'basic', 
+    name: 'Standard', 
+    cost: 10, 
+    styleColor: 'bg-stone-200 border-stone-400', // <--- CAMBIATO DA color A styleColor
+    hexColor: '#a8a29e', 
+    model: '/ui/box-standard.ply' 
+  },
+  { 
+    id: 'advanced', 
+    name: 'Gold', 
+    cost: 50, 
+    styleColor: 'bg-yellow-200 border-yellow-400', // <--- CAMBIATO
+    hexColor: '#facc15', 
+    model: '/ui/box-gold.ply'
+  },
+  { 
+    id: 'elite', 
+    name: 'Diamond', 
+    cost: 200, 
+    styleColor: 'bg-cyan-200 border-cyan-400', // <--- CAMBIATO
+    hexColor: '#22d3ee', 
+    model: '/ui/box-diamond.ply'
+  },
+  { 
+    id: 'god', 
+    name: 'Godly', 
+    cost: 1000, 
+    styleColor: 'bg-purple-200 border-purple-400', // <--- CAMBIATO
+    hexColor: '#a855f7', 
+    model: '/ui/box-god.ply'
+  },
 ];
 
 type Rarity = "common" | "rare" | "epic" | "legendary" | "mythic";
@@ -209,17 +250,24 @@ export default function HomeScreen({
               <div className="grid grid-cols-2 gap-4 w-full">
                 {PACKS.map((pack) => (
                   <button
-                    key={pack.id}
-                    onClick={() => { vibrate(10); setSelectedPackId(pack.id); }}
-                    className={`sticker relative ${pack.color} border-b-4 rounded-2xl p-4 flex flex-col items-center active:scale-95 transition-transform`}
+                  key={pack.id}
+                  onClick={() => { vibrate(10); setSelectedPackId(pack.id); }}
+                  className={`sticker relative ${pack.styleColor} border-b-4 rounded-2xl p-4 flex flex-col items-center active:scale-95 transition-transform h-48`} // Aumenta h-48 per dare spazio al 3D
                   >
-                    <div className="font-black text-lg uppercase tracking-tight text-black/70 mb-2">{pack.name}</div>
-                    <img src={pack.img} className="w-20 h-20 object-contain drop-shadow-md mb-2" />
-                    <div className="bg-black/10 px-3 py-1 rounded-full flex items-center gap-1">
-                      <img src="/ui/coin.jpg" className="w-4 h-4 rounded-full" />
-                      <span className="font-black text-sm">{pack.cost}</span>
-                    </div>
-                  </button>
+                <div className="font-black text-lg uppercase tracking-tight text-black/70 mb-2">{pack.name}</div>
+  
+  {/* AREA 3D */}
+  <div className="w-24 h-24 mb-2"> {/* Contenitore fisso per il 3D */}
+    <Suspense fallback={<div className="w-full h-full bg-black/10 rounded-full animate-pulse"/>}>
+       <Box3D path={pack.model} colorHex={pack.hexColor} />
+    </Suspense>
+  </div>
+
+  <div className="bg-black/10 px-3 py-1 rounded-full flex items-center gap-1 z-10">
+    <img src="/ui/coin.jpg" className="w-4 h-4 rounded-full" />
+    <span className="font-black text-sm">{pack.cost}</span>
+  </div>
+</button>
                 ))}
               </div>
             </motion.div>
