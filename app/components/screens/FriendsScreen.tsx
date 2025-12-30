@@ -34,9 +34,6 @@ export default function FriendsScreen() {
         .select("user_id, email, level, xp")
         .in("user_id", friendIds);
       
-      // Recuperiamo le email vere da auth se possibile, o usiamo users_profile se le abbiamo salvate lì.
-      // Nota: users_profile di solito non ha l'email per privacy default di Supabase, 
-      // ma nel tuo ProfileScreen vedo che la passi. Se nel DB non c'è, mostreremo l'ID accorciato.
       setFriends(profiles || []);
     }
     setLoading(false);
@@ -48,15 +45,20 @@ export default function FriendsScreen() {
     alert("Link copiato! Invialo a un amico.");
   };
 
- const addFriend = async (input: string) => {
+  const addFriend = async (input: string) => {
     if (!input) return;
     setAdding(true);
 
-    // --- MODIFICA QUI ---
-    // Se l'input contiene un URL o "=", prendiamo solo l'ultima parte
-    // Esempio: "catpacks.vercel.app?invite=123-abc" diventa "123-abc"
-    const cleanId = input.includes("=") ? input.split("=").pop() : input;
-    // --------------------
+    // --- MODIFICA FONDAMENTALE (REGEX) ---
+    // Cerchiamo un UUID (formato: 8-4-4-4-12 caratteri esadecimali) dentro la stringa incollata.
+    // Questo funziona con link, spazi, testo attorno, ecc.
+    const uuidMatch = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    
+    // Se troviamo un UUID valido usiamo quello, altrimenti proviamo a pulire l'input
+    const cleanId = uuidMatch ? uuidMatch[0] : input.trim();
+    
+    console.log("Tentativo aggiunta amico:", cleanId);
+    // -------------------------------------
     
     // Recupera token
     const { data } = await supabase.auth.getSession();
@@ -68,17 +70,19 @@ export default function FriendsScreen() {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ friendId: cleanId }) // Usa cleanId qui!
+      body: JSON.stringify({ friendId: cleanId })
     });
 
     const json = await res.json();
     setAdding(false);
 
     if (json.success) {
-      alert("Amico aggiunto!");
+      alert("Amico aggiunto con successo!");
       setInputCode("");
       loadFriends(); 
     } else {
+      // Se dice ancora "Utente non trovato", verifica che l'amico esista davvero nel DB
+      // Se dice "Violates row level security", devi applicare la SOLUZIONE BACKEND (passo precedente)
       alert("Errore: " + json.error);
     }
   };
@@ -109,7 +113,7 @@ export default function FriendsScreen() {
                 <input 
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value)}
-                    placeholder="Incolla codice qui..."
+                    placeholder="Incolla link o codice..."
                     className="flex-1 bg-gray-100 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition"
                 />
                 <button 
@@ -141,7 +145,6 @@ export default function FriendsScreen() {
                             {f.level || 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                            {/* Se non abbiamo l'email salvata, mostriamo l'ID parziale */}
                             <div className="font-bold truncate text-sm">
                                 {f.email || `Giocatore ${f.user_id.slice(0,6)}`}
                             </div>
