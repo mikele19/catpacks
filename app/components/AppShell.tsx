@@ -15,7 +15,6 @@ export default function AppShell() {
   const [tab, setTab] = useState<TabKey>("home");
   const [credits, setCredits] = useState(0); 
 
-  // --- LOGICA DI AUTENTICAZIONE ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -35,7 +34,6 @@ export default function AppShell() {
 
   if (loading) return <div className="min-h-screen bg-yellow-400" />;
 
-  // SE NON SIAMO LOGGATI -> Mostra LoginScreen
   if (!session) {
     return (
         <div 
@@ -47,7 +45,6 @@ export default function AppShell() {
     );
   }
 
-  // SE SIAMO LOGGATI -> Mostra l'APP
   return (
     <div 
       className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat text-black"
@@ -61,15 +58,17 @@ export default function AppShell() {
           onRedeem={handleRedeem}
         />
 
-        {/* --- MODIFICA FONDAMENTALE --- */}
-        {/* Abbiamo aggiunto setCredits={setCredits} qui sotto! */}
         <CollectionScreen 
            key="collection" 
            isActive={tab === "collection"} 
            setCredits={setCredits}
         />
         
-        <ProfileScreen key="profile" />
+        {/* MODIFICA QUI: Aggiungi isActive={tab === "profile"} */}
+        <ProfileScreen 
+           key="profile" 
+           isActive={tab === "profile"} 
+        />
       </SwipeTabs>
 
       <BottomNav tab={tab} onTabChange={setTab} />

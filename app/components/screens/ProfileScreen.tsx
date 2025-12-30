@@ -1,45 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function ProfileScreen({ lowPerfMode }: { lowPerfMode?: boolean }) {
+// Aggiungiamo isActive alle props
+export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
   const [profile, setProfile] = useState<any>(null);
   const [catCount, setCatCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if(!user) return;
+  // Spostiamo la logica di caricamento in una funzione riutilizzabile
+  const loadData = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if(!user) return;
 
-      // 1. Carica Profilo (Livello, XP)
-      const { data: profileData } = await supabase
-        .from("users_profile")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-      
-      // 2. Conta Gatti Posseduti
-      const { count } = await supabase
-        .from("user_cats")
-        .select("*", { count: 'exact', head: true }) 
-        .eq("user_id", user.id);
+    // 1. Carica Profilo (Livello, XP)
+    const { data: profileData } = await supabase
+      .from("users_profile")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+    
+    // 2. Conta Gatti Posseduti
+    const { count } = await supabase
+      .from("user_cats")
+      .select("*", { count: 'exact', head: true }) 
+      .eq("user_id", user.id);
 
-      setProfile({ ...profileData, email: user.email });
-      setCatCount(count || 0);
-      setLoading(false);
-    }
-
-    loadData();
+    setProfile({ ...profileData, email: user.email });
+    setCatCount(count || 0);
+    setLoading(false);
   }, []);
+
+  // Carica all'avvio
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Carica OGNI VOLTA che la tab diventa attiva
+  useEffect(() => {
+    if (isActive) {
+      loadData();
+    }
+  }, [isActive, loadData]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.reload();
   };
 
-  if (loading) return <div className="h-full flex items-center justify-center font-black">Caricamento...</div>;
+  if (loading && !profile) return <div className="h-full flex items-center justify-center font-black">Caricamento...</div>;
 
   // Calcoli per la barra livello
   const currentLevel = profile?.level || 1;
@@ -58,7 +68,7 @@ export default function ProfileScreen({ lowPerfMode }: { lowPerfMode?: boolean }
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-yellow-300 rounded-full blur-2xl opacity-40"></div>
 
             <div className="relative z-10">
-                <div className="text-xl font-black mb-1">{profile.email?.split('@')[0]}</div>
+                <div className="text-xl font-black mb-1">{profile?.email?.split('@')[0]}</div>
                 <div className="text-sm font-bold text-black/50 mb-6">Giocatore</div>
                 
                 <div className="flex gap-4 text-center">
