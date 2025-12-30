@@ -5,14 +5,13 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI (COLORI VIVACI) ---
+// --- CONFIGURAZIONE PACCHI ---
 const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
     img: '/ui/box-standard.png',
-    // Colori per la card "Gommosa"
     bgColor: 'bg-stone-100', 
     textColor: 'text-stone-600',
     pillColor: 'bg-stone-200'
@@ -170,11 +169,9 @@ export default function HomeScreen({
   useEffect(() => {
     (async () => {
       if (stage !== "charging" || taps < tapsNeeded) return;
-      
       setStage("opening");
       setIsRevealing(true);
       vibrate(40);
-
       try {
         await Promise.all([
             doOpenPack(),
@@ -195,16 +192,12 @@ export default function HomeScreen({
   if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    // 1. SFONDO BASE (Gradiente Giallo/Arancio)
-    <div className="h-full w-full overflow-hidden relative flex flex-col"
-         style={{
-           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)"
-         }}>
+    <div className="h-full w-full overflow-hidden relative flex flex-col bg-stone-900">
       
-      {/* 2. RAGGIERA DI LUCE ROTANTE (CSS Generato) */}
-      <div className="absolute inset-[-50%] w-[200%] h-[200%] opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
+      {/* SFONDO ROTANTE */}
+      <div className="absolute top-1/2 left-1/2 w-[250vmax] h-[250vmax] -translate-x-1/2 -translate-y-1/2 bg-[url('/ui/bg.png')] bg-cover bg-center animate-spin-slow pointer-events-none z-0"></div>
 
-      {/* FLASH OVERLAY */}
+      {/* FLASH */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
@@ -218,32 +211,33 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* HEADER */}
-      <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20 relative">
+      {/* --- HEADER COMPATTO --- */}
+      {/* Ridotto padding e dimensioni per stare su schermi piccoli */}
+      <div className="pt-4 px-3 flex items-center justify-between gap-2 w-full max-w-md mx-auto z-20 relative">
          
-         {/* Monete */}
-         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3 bg-white/90 backdrop-blur-sm">
-            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
-            <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
+         {/* Monete: "w-auto" invece di flex-1 per togliere lo spazio vuoto extra */}
+         <div className="h-10 soft-ui-sm flex items-center px-4 gap-2 bg-white/90 backdrop-blur-sm shrink-0">
+            <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
+            <span className="font-black text-lg pt-0.5 text-yellow-900">{credits}</span>
          </div>
 
-         {/* Bottoni Destra */}
-         <div className="flex items-center gap-4">
+         {/* Bottoni Destra: Più piccoli (h-10 invece di h-14) */}
+         <div className="flex items-center gap-2">
              <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
-                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl bg-white/90 backdrop-blur-sm"
+                className="h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-xl bg-white/90 backdrop-blur-sm"
              >
                 🎁
              </button>
-             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-yellow-900 bg-white/90 backdrop-blur-sm">
+             <div className="h-10 w-10 soft-ui-sm flex items-center justify-center font-black text-xs text-yellow-900 bg-white/90 backdrop-blur-sm">
                 {initials}
              </div>
          </div>
       </div>
 
       {/* CENTRO */}
-      <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10">
+      <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10 pb-16">
         <AnimatePresence mode="wait">
           
           {/* FASE 1: CAROSELLO */}
@@ -253,18 +247,20 @@ export default function HomeScreen({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, scale: 1.2 }}
-              className="w-full flex flex-col items-center justify-center pb-10"
+              className="w-full flex flex-col items-center justify-center"
             >
-              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-xl" />
+              {/* Logo ridotto leggermente */}
+              <img src="/ui/logo.png" alt="Logo" className="w-48 mb-4 drop-shadow-xl" />
 
-              <div className="relative w-full max-w-sm h-64 flex items-center justify-center perspective-500">
-                <button onClick={prevPack} className="absolute left-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
+              <div className="relative w-full max-w-sm h-56 flex items-center justify-center perspective-500">
+                {/* Tasti laterali più piccoli (h-10 w-10) */}
+                <button onClick={prevPack} className="absolute left-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
                 
-                <motion.div className="absolute left-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -30, rotateY: -25 }}>
-                   <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32 drop-shadow-xl" />
+                <motion.div className="absolute left-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -25, rotateY: -25 }}>
+                   <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-28 drop-shadow-xl" />
                 </motion.div>
-                <motion.div className="absolute right-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: 30, rotateY: 25 }}>
-                   <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-32 drop-shadow-xl" />
+                <motion.div className="absolute right-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: 25, rotateY: 25 }}>
+                   <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-28 drop-shadow-xl" />
                 </motion.div>
                 
                 <motion.div
@@ -273,31 +269,29 @@ export default function HomeScreen({
                   animate={{ scale: 1.3, y: 0, opacity: 1, rotateY: 0 }}
                   className="z-20 relative drop-shadow-2xl"
                 >
-                  <img src={activePack.img} className="w-40 object-contain" />
+                  <img src={activePack.img} className="w-36 object-contain" />
                 </motion.div>
 
-                <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
+                <button onClick={nextPack} className="absolute right-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
 
-              {/* INFO BOX (CARD COLORATA INTERA!) */}
-              <div className="mt-8 flex flex-col items-center gap-6 w-full px-8">
+              {/* INFO BOX COMPATTO */}
+              <div className="mt-2 flex flex-col items-center gap-4 w-full px-6">
                  
-                 <div className={`soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3 ${activePack.bgColor}`}>
-                     
-                     <div className={`text-2xl font-black uppercase tracking-widest ${activePack.textColor}`}>
+                 <div className={`soft-ui px-6 py-4 w-full max-w-[240px] text-center flex flex-col items-center gap-2 ${activePack.bgColor}`}>
+                     <div className={`text-xl font-black uppercase tracking-widest ${activePack.textColor}`}>
                         {activePack.name}
                      </div>
-                     
-                     <div className={`soft-ui-sm px-5 py-2 flex items-center gap-2 ${activePack.pillColor}`}>
+                     <div className={`soft-ui-sm px-4 py-1.5 flex items-center gap-1.5 ${activePack.pillColor}`}>
                         <img src="/ui/coin.png" className="w-4 h-4" />
-                        <span className={`font-bold text-lg ${activePack.textColor}`}>{activePack.cost}</span>
+                        <span className={`font-bold text-base ${activePack.textColor}`}>{activePack.cost}</span>
                      </div>
-
                  </div>
 
+                 {/* Tasto SCEGLI compatto */}
                  <button 
                     onClick={selectCurrentPack} 
-                    className="w-full max-w-xs soft-ui soft-btn py-4 font-black text-xl uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
+                    className="w-full max-w-[240px] soft-ui soft-btn py-3 font-black text-lg uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
                  >
                     SCEGLI
                  </button>
@@ -306,7 +300,7 @@ export default function HomeScreen({
             </motion.div>
           ) : (
             
-            /* FASE 2: APERTURA */
+            /* FASE 2: APERTURA (Tasto Indietro più piccolo) */
             <motion.div 
               key="opening"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -317,7 +311,7 @@ export default function HomeScreen({
               <button 
                 onClick={() => setSelectedPackId(null)} 
                 disabled={busy} 
-                className="absolute top-4 left-4 soft-ui-sm soft-btn px-4 py-2 font-black text-xs z-30 uppercase tracking-wide text-gray-600 bg-white/90 flex items-center gap-2"
+                className="absolute top-4 left-4 soft-ui-sm soft-btn px-3 py-1.5 font-black text-[10px] z-30 uppercase tracking-wide text-gray-600 bg-white/90 flex items-center gap-1"
               >
                 ◀ Indietro
               </button>
@@ -352,27 +346,27 @@ export default function HomeScreen({
               animate={{ scale: 1, y: 0 }}
               className="flex flex-col items-center w-full max-w-sm"
             >
-               <div className="relative mb-8">
+               <div className="relative mb-6">
                  <div className="absolute inset-0 bg-white/30 blur-3xl rounded-full scale-110 z-0"></div>
                  <motion.img
                   src={lastCat.image_url}
-                  className="relative z-10 w-64 h-64 object-contain drop-shadow-2xl animate-float"
+                  className="relative z-10 w-56 h-56 object-contain drop-shadow-2xl animate-float"
                   initial={{ rotate: -5 }}
                   animate={{ rotate: 0, transition: {duration: 0.5} }}
                 />
             </div>
 
-              <div className="soft-ui p-8 w-full text-center relative z-20 bg-white">
-                  <div className="text-3xl font-black mb-2 text-gray-800">{lastCat.name}</div>
-                  <div className={`text-xs font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-8 opacity-70`}>
+              <div className="soft-ui p-6 w-full text-center relative z-20 bg-white">
+                  <div className="text-2xl font-black mb-1 text-gray-800">{lastCat.name}</div>
+                  <div className={`text-[10px] font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-6 opacity-70`}>
                     {lastCat.rarity}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <button onClick={fullReset} className="py-3 font-bold text-gray-400 hover:text-gray-600 transition">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={fullReset} className="py-2.5 font-bold text-gray-400 hover:text-gray-600 transition text-sm">
                       ESCI
                     </button>
-                    <button onClick={softReset} className="soft-ui soft-btn py-3 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">
+                    <button onClick={softReset} className="soft-ui soft-btn py-2.5 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">
                       DI NUOVO
                     </button>
                   </div>
@@ -383,9 +377,8 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        /* Rallentata leggermente a 40s per renderla più piacevole */
-        .animate-spin-slow { animation: spin-slow 40s linear infinite; }
+        @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 60s linear infinite; }
         
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
