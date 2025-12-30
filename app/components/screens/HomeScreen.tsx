@@ -12,7 +12,6 @@ const PACKS = [
     name: 'Standard', 
     cost: 10, 
     img: '/ui/box-standard.png',
-    // Colori pieni per la card
     bgColor: 'bg-stone-100', 
     textColor: 'text-stone-600',
     pillColor: 'bg-stone-200'
@@ -22,17 +21,15 @@ const PACKS = [
     name: 'Gold', 
     cost: 50, 
     img: '/ui/box-gold.png',
-    // Giallo intenso
     bgColor: 'bg-yellow-400', 
     textColor: 'text-yellow-900',
-    pillColor: 'bg-yellow-500/30' // Pillola semi-trasparente
+    pillColor: 'bg-yellow-500/30'
   },
   { 
     id: 'elite', 
     name: 'Diamond', 
     cost: 200, 
     img: '/ui/box-diamond.png',
-    // Ciano intenso
     bgColor: 'bg-cyan-400', 
     textColor: 'text-cyan-900',
     pillColor: 'bg-cyan-500/30'
@@ -42,9 +39,8 @@ const PACKS = [
     name: 'Godly', 
     cost: 1000, 
     img: '/ui/box-god.png',
-    // Viola intenso
     bgColor: 'bg-purple-500', 
-    textColor: 'text-white', // Testo bianco sul viola scuro
+    textColor: 'text-white',
     pillColor: 'bg-purple-700/30'
   },
 ];
@@ -198,14 +194,13 @@ export default function HomeScreen({
   if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    // SFONDO SUNBURST (GIALLO RAGGIERA)
-    <div className="h-full w-full overflow-hidden relative flex flex-col"
-         style={{
-           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)" // Gradiente Giallo Oro -> Arancio
-         }}>
+    <div className="h-full w-full overflow-hidden relative flex flex-col bg-stone-900"> {/* Colore base scuro di fallback */}
       
-      {/* Texture Raggiera (Opzionale, effetto luce) */}
-      <div className="absolute inset-0 opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
+      {/* --- SFONDO PERSONALIZZATO CHE GIRA (bg.png) --- */}
+      {/* Usiamo un div gigante centrato per evitare bordi tagliati durante la rotazione */}
+      <div 
+          className="absolute top-1/2 left-1/2 w-[250vmax] h-[250vmax] -translate-x-1/2 -translate-y-1/2 bg-[url('/ui/bg.png')] bg-cover bg-center animate-spin-slow pointer-events-none z-0"
+      ></div>
 
       {/* FLASH OVERLAY */}
       <AnimatePresence>
@@ -221,10 +216,9 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* HEADER */}
-      <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20">
+      {/* HEADER (Z-INDEX alto per stare sopra lo sfondo) */}
+      <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20 relative">
          
-         {/* Monete: Sfondo bianco semi-trasparente per staccare dal giallo */}
          <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3 bg-white/90">
             <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
             <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
@@ -244,7 +238,7 @@ export default function HomeScreen({
          </div>
       </div>
 
-      {/* CENTRO */}
+      {/* CENTRO (Z-INDEX alto per stare sopra lo sfondo) */}
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10">
         <AnimatePresence mode="wait">
           
@@ -281,17 +275,15 @@ export default function HomeScreen({
                 <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
 
-              {/* INFO BOX (CARD COLORATA INTERA!) */}
+              {/* INFO BOX */}
               <div className="mt-8 flex flex-col items-center gap-6 w-full px-8">
                  
-                 {/* Qui usiamo bgColor per colorare TUTTA la card (es: Giallo Pieno) */}
                  <div className={`soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3 ${activePack.bgColor}`}>
                      
                      <div className={`text-2xl font-black uppercase tracking-widest ${activePack.textColor}`}>
                         {activePack.name}
                      </div>
                      
-                     {/* Pillola Prezzo (leggermente più scura/chiara dello sfondo) */}
                      <div className={`soft-ui-sm px-5 py-2 flex items-center gap-2 ${activePack.pillColor}`}>
                         <img src="/ui/coin.png" className="w-4 h-4" />
                         <span className={`font-bold text-lg ${activePack.textColor}`}>{activePack.cost}</span>
@@ -299,7 +291,6 @@ export default function HomeScreen({
 
                  </div>
 
-                 {/* Tasto SCEGLI (Anche questo segue il colore o nero) */}
                  <button 
                     onClick={selectCurrentPack} 
                     className="w-full max-w-xs soft-ui soft-btn py-4 font-black text-xl uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
@@ -388,8 +379,8 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 60s linear infinite; }
         
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
