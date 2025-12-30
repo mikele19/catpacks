@@ -48,9 +48,15 @@ export default function FriendsScreen() {
     alert("Link copiato! Invialo a un amico.");
   };
 
-  const addFriend = async (idToAdd: string) => {
-    if (!idToAdd) return;
+ const addFriend = async (input: string) => {
+    if (!input) return;
     setAdding(true);
+
+    // --- MODIFICA QUI ---
+    // Se l'input contiene un URL o "=", prendiamo solo l'ultima parte
+    // Esempio: "catpacks.vercel.app?invite=123-abc" diventa "123-abc"
+    const cleanId = input.includes("=") ? input.split("=").pop() : input;
+    // --------------------
     
     // Recupera token
     const { data } = await supabase.auth.getSession();
@@ -62,7 +68,7 @@ export default function FriendsScreen() {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ friendId: idToAdd })
+      body: JSON.stringify({ friendId: cleanId }) // Usa cleanId qui!
     });
 
     const json = await res.json();
@@ -71,7 +77,7 @@ export default function FriendsScreen() {
     if (json.success) {
       alert("Amico aggiunto!");
       setInputCode("");
-      loadFriends(); // Ricarica la lista
+      loadFriends(); 
     } else {
       alert("Errore: " + json.error);
     }
