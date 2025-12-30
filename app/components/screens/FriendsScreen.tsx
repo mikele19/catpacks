@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function FriendsScreen() {
   const [friends, setFriends] = useState<any[]>([]);
@@ -10,69 +11,101 @@ export default function FriendsScreen() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
+  // STATI PER IL POPUP AMICO
+  const [selectedFriend, setSelectedFriend] = useState<any>(null);
+  const [friendCats, setFriendCats] = useState<any[]>([]);
+  const [loadingCats, setLoadingCats] = useState(false);
+
   useEffect(() => {
     loadFriends();
   }, []);
 
   const loadFriends = async () => {
-    console.log("--- CARICAMENTO AMICI ---");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setMyId(user.id);
 
-    // 1. TROVA LE RELAZIONI (Chi sono i miei amici?)
-    const { data: relations, error: relError } = await supabase
+    // 1. Trova amici
+    const { data: relations } = await supabase
       .from("user_friends")
       .select("friend_id")
       .eq("user_id", user.id);
 
-    if (relError) console.error("ERRORE SQL user_friends:", relError);
-    
-    // Lista degli ID degli amici
     const friendIds = relations?.map(r => r.friend_id) || [];
-    console.log("ID Amici trovati:", friendIds);
 
     if (friendIds.length > 0) {
-      // 2. SCARICA I DATI (Nomi, Livelli)
+      // 2. Scarica profili
       const { data: profiles } = await supabase
         .from("users_profile")
         .select("user_id, email, level, xp")
         .in("user_id", friendIds);
 
-      // 3. UNISCI TUTTO (Anche se il profilo manca!)
+      // 3. Unisci dati
       const friendsWithData = await Promise.all(friendIds.map(async (fid) => {
-          // Cerchiamo se esiste il profilo scaricato
           const profile = profiles?.find(p => p.user_id === fid);
-
-          // Contiamo i gatti
+          
           const { count } = await supabase
               .from("user_cats")
               .select("*", { count: 'exact', head: true })
               .eq("user_id", fid);
           
-          // Se il profilo non c'è, creiamo dati finti "Sconosciuto"
           if (!profile) {
-             console.warn(`Amico ${fid} senza profilo!`);
              return {
                 user_id: fid,
-                email: null, // Segnale che manca il profilo
+                email: null,
                 level: 1,
                 xp: 0,
                 cat_count: count || 0
              };
           }
 
-          return {
-              ...profile,
-              cat_count: count || 0
-          };
+          return { ...profile, cat_count: count || 0 };
       }));
       
       setFriends(friendsWithData);
-    } else {
-      setFriends([]);
     }
     setLoading(false);
+  };
+
+  const openFriendCollection = async (friend: any) => {
+    setSelectedFriend(friend);
+    setLoadingCats(true);
+    setFriendCats([]);
+
+    try {
+        // 1. Prendi l'inventario dell'amico
+        const { data: inventory } = await supabase
+            .from("user_cats")
+            .select("cat_id")
+            .eq("user_id", friend.user_id);
+
+        if (inventory && inventory.length > 0) {
+            // Conta le quantità (es. Jolly x2)
+            const counts: Record<string, number> = {};
+            inventory.forEach((item: any) => {
+                counts[item.cat_id] = (counts[item.cat_id] || 0) + 1;
+            });
+
+            // 2. Scarica i dettagli dei gatti (nome, immagine)
+            const catIds = Object.keys(counts);
+            const { data: catalog } = await supabase
+                .from("cats_catalog")
+                .select("*")
+                .in("id", catIds);
+            
+            // Unisci quantità e dettagli
+            const merged = catalog?.map(cat => ({
+                ...cat,
+                count: counts[cat.id]
+            })).sort((a, b) => b.base_value - a.base_value); // Ordina per valore
+
+            setFriendCats(merged || []);
+        }
+    } catch (e) {
+        console.error("Errore caricamento collezione amico", e);
+    } finally {
+        setLoadingCats(false);
+    }
   };
 
   const copyInviteLink = () => {
@@ -117,6 +150,7 @@ export default function FriendsScreen() {
       <div className="px-5 pt-10 max-w-md mx-auto">
         <h1 className="text-4xl font-black mb-6 text-center drop-shadow-sm">Amici</h1>
 
+        {/* BOX INVITO */}
         <div className="soft-ui bg-yellow-100 border-2 border-yellow-300 p-6 rounded-3xl mb-6 text-center">
             <div className="text-sm font-bold text-yellow-800 uppercase tracking-widest mb-2">Il tuo Codice Amico</div>
             <div className="bg-white/50 p-3 rounded-xl font-mono text-xs truncate select-all mb-3">
@@ -130,6 +164,7 @@ export default function FriendsScreen() {
             </button>
         </div>
 
+        {/* BOX AGGIUNGI */}
         <div className="soft-ui bg-white/90 p-6 rounded-3xl mb-8">
             <h3 className="font-black text-lg mb-4">Aggiungi Amico</h3>
             <div className="flex gap-2">
@@ -149,6 +184,7 @@ export default function FriendsScreen() {
             </div>
         </div>
 
+        {/* LISTA AMICI */}
         <h3 className="font-black text-xl mb-4 px-2">I tuoi amici ({friends.length})</h3>
         
         {loading ? (
@@ -162,8 +198,12 @@ export default function FriendsScreen() {
         ) : (
             <div className="space-y-3">
                 {friends.map((f) => (
-                    <div key={f.user_id} className="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-gray-100 flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center text-white shadow-md border-2 border-white ${f.email ? 'bg-gradient-to-br from-blue-400 to-purple-500' : 'bg-gray-300'}`}>
+                    <button 
+                        key={f.user_id} 
+                        onClick={() => openFriendCollection(f)}
+                        className="w-full bg-white p-4 rounded-2xl shadow-sm border-b-4 border-gray-100 flex items-center gap-4 active:scale-95 transition-transform text-left group"
+                    >
+                        <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center text-white shadow-md border-2 border-white transition-transform group-hover:scale-110 ${f.email ? 'bg-gradient-to-br from-blue-400 to-purple-500' : 'bg-gray-300'}`}>
                             <span className="text-[8px] font-bold uppercase opacity-80 leading-none">LVL</span>
                             <span className="text-lg font-black leading-none">{f.level || "?"}</span>
                         </div>
@@ -177,11 +217,73 @@ export default function FriendsScreen() {
                                 <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-md">🐱 {f.cat_count} Gatti</span>
                             </div>
                         </div>
-                    </div>
+                        <div className="text-2xl opacity-20">👉</div>
+                    </button>
                 ))}
             </div>
         )}
       </div>
+
+      {/* --- POPUP COLLEZIONE AMICO --- */}
+      <AnimatePresence>
+        {selectedFriend && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
+                onClick={() => setSelectedFriend(null)}
+            >
+                <motion.div
+                    initial={{ scale: 0.8, y: 50 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.8, y: 50 }}
+                    className="bg-white w-full max-w-sm max-h-[70vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Intestazione Popup */}
+                    <div className="text-center mb-4">
+                        <div className="text-sm font-bold text-gray-400 uppercase tracking-widest">Collezione di</div>
+                        <h3 className="text-2xl font-black truncate">
+                            {selectedFriend.email ? selectedFriend.email.split('@')[0] : "Sconosciuto"}
+                        </h3>
+                    </div>
+
+                    <button 
+                        onClick={() => setSelectedFriend(null)}
+                        className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500 transition-colors"
+                    >
+                        ✕
+                    </button>
+
+                    {/* Contenuto Griglia */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2">
+                        {loadingCats ? (
+                            <div className="flex items-center justify-center h-40 font-bold text-gray-400">Caricamento...</div>
+                        ) : friendCats.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                                <div className="text-2xl mb-2">📦</div>
+                                <div className="font-bold text-xs">Inventario vuoto</div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                                {friendCats.map((cat) => (
+                                    <div key={cat.id} className="aspect-square bg-white rounded-xl p-1 shadow-sm border border-gray-100 relative">
+                                        <img src={cat.image_url} alt={cat.name} className="w-full h-full object-contain" />
+                                        {cat.count > 1 && (
+                                            <div className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                                                x{cat.count}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
