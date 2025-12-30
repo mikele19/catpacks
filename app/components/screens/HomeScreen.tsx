@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
@@ -61,6 +61,10 @@ export default function HomeScreen({
   const [lastXp, setLastXp] = useState(0);
   const [isNewCat, setIsNewCat] = useState(false);
 
+  // --- TRUCCO PER LA VELOCITÀ ---
+  // Usiamo un Ref per tenere in memoria la richiesta al server mentre l'utente tappa
+  const packPromiseRef = useRef<Promise<any> | null>(null);
+
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
   const activePack = PACKS[activeIndex];
   const openingPack = useMemo(() => PACKS.find(p => p.id === selectedPackId), [selectedPackId]);
@@ -94,33 +98,26 @@ export default function HomeScreen({
   const prevPack = () => { vibrate(5); setActiveIndex((prev) => (prev - 1 + PACKS.length) % PACKS.length); };
   const selectCurrentPack = () => { vibrate(10); setSelectedPackId(activePack.id); };
 
-  const doOpenPack = async () => {
-    try {
-      if (!openingPack) throw new Error("Nessun pacco selezionato");
-      const headers = await getAuthHeader();
-      // Chiamata API ottimizzata
-      const res = await fetch("/api/open-pack", { 
-        method: "POST", headers, body: JSON.stringify({ packId: openingPack.id }) 
-      });
-      const contentType = res.headers.get("content-type");
-      if (!contentType?.includes("application/json")) throw new Error("Errore Server");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Errore sconosciuto");
-      
-      setCredits(json.credits);
-      setLastCat(json.cat);
-      setLastXp(json.xpGained || 0);
-      setIsNewCat(json.isNew || false);
-      
-    } catch (err: any) {
-      console.error(err);
-      alert("ERRORE: " + err.message);
-      throw err;
-    }
+  // Funzione che lancia la richiesta MA non aspetta la risposta (la salva nel Ref)
+  const startPackFetch = () => {
+    if (!openingPack) return;
+    
+    // Salviamo la promessa nel ref per usarla dopo
+    packPromiseRef.current = (async () => {
+        const headers = await getAuthHeader();
+        const res = await fetch("/api/open-pack", { 
+          method: "POST", headers, body: JSON.stringify({ packId: openingPack.id }) 
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Errore sconosciuto");
+        return json;
+    })();
   };
 
   const tap = () => {
     if (isRevealing) return;
+    
+    // PRIMO TAP: Inizia subito a scaricare i dati!
     if (stage === "idle") { 
         if (busy || isRevealing) return;
         setBusy(true);
@@ -128,55 +125,66 @@ export default function HomeScreen({
         setTaps(0);
         setStage("charging");
         vibrate(10);
+        
+        // QUI È LA MAGIA: Lanciamo la richiesta mentre l'utente inizia a tappare
+        startPackFetch();
         return; 
     }
+    
     if (stage !== "charging") return;
     setTaps((t) => Math.min(tapsNeeded, t + 1));
     vibrate(6);
   };
 
+  const resetAll = () => {
+    setStage("idle");
+    setIsRevealing(false);
+    setTaps(0);
+    setLastCat(null);
+    setBusy(false);
+    setLastXp(0);
+    setIsNewCat(false);
+    packPromiseRef.current = null; // Puliamo la memoria
+  };
+
   const fullReset = () => {
-    setStage("idle");
-    setIsRevealing(false);
-    setTaps(0);
-    setLastCat(null);
-    setBusy(false);
+    resetAll();
     setSelectedPackId(null);
-    setLastXp(0);
-    setIsNewCat(false);
   };
 
-  const softReset = () => {
-    setStage("idle");
-    setIsRevealing(false);
-    setTaps(0);
-    setLastCat(null);
-    setBusy(false);
-    setLastXp(0);
-    setIsNewCat(false);
-  };
-
-  // --- LOGICA DI APERTURA OTTIMIZZATA ---
   useEffect(() => {
     (async () => {
+      // Se non abbiamo finito i tap, non fare nulla
       if (stage !== "charging" || taps < tapsNeeded) return;
+      
       setStage("opening");
       setIsRevealing(true);
       vibrate(40);
+
       try {
-        // RIMOSSO IL TIMEOUT ARTIFICIALE DI 200ms
-        // Ora attendiamo solo la risposta del server (che è stata velocizzata)
-        await doOpenPack();
+        // Recuperiamo la richiesta che era partita al primo tap
+        if (!packPromiseRef.current) {
+            throw new Error("Errore fetch mancante");
+        }
+
+        // A questo punto, dato che l'utente ha impiegato tempo a fare 3 tap,
+        // la risposta è probabilmente GIÀ PRONTA! Istantaneo.
+        const json = await packPromiseRef.current;
         
-        // Piccolissimo delay (50ms) solo per garantire che il browser renderizzi il flash bianco
-        await new Promise(r => setTimeout(r, 50)); 
+        setCredits(json.credits);
+        setLastCat(json.cat);
+        setLastXp(json.xpGained || 0);
+        setIsNewCat(json.isNew || false);
         
+        // Nessun delay artificiale, mostriamo subito
         setStage("reveal");
         setIsRevealing(false);
         vibrate(50);
-      } catch (e) {
-        setStage("idle");
-        setIsRevealing(false);
+
+      } catch (err: any) {
+        console.error(err);
+        alert("Ops: " + err.message);
+        resetAll();
       } finally {
         setBusy(false);
       }
@@ -198,8 +206,8 @@ export default function HomeScreen({
           <motion.div
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
-             exit={{ opacity: 0, transition: { duration: 0.2 } }} // Uscita rapida
-             transition={{ duration: 0.1 }} // Entrata rapida
+             exit={{ opacity: 0, transition: { duration: 0.2 } }}
+             transition={{ duration: 0.05 }}
              className="fixed inset-0 z-40 pointer-events-none"
              style={{ background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 80%)" }}
           />
@@ -274,7 +282,7 @@ export default function HomeScreen({
                  <motion.div 
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.1, type: "spring" }} // Delay ridotto
+                    transition={{ delay: 0.1, type: "spring" }}
                     className="absolute -top-2 -right-2 bg-green-500 text-white font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform rotate-12"
                  >
                     +{lastXp} XP
@@ -284,7 +292,7 @@ export default function HomeScreen({
                     <motion.div 
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2, type: "spring" }} // Delay ridotto
+                        transition={{ delay: 0.2, type: "spring" }}
                         className="absolute -top-2 left-0 bg-yellow-400 text-yellow-900 font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform -rotate-12"
                     >
                         NEW!
@@ -299,7 +307,7 @@ export default function HomeScreen({
                   <div className={`text-[10px] font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-6 opacity-70`}>{lastCat.rarity}</div>
                   <div className="grid grid-cols-2 gap-3">
                     <button onClick={fullReset} className="py-2.5 font-bold text-gray-400 hover:text-gray-600 transition text-sm">ESCI</button>
-                    <button onClick={softReset} className="soft-ui soft-btn py-2.5 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">DI NUOVO</button>
+                    <button onClick={resetAll} className="soft-ui soft-btn py-2.5 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">DI NUOVO</button>
                   </div>
               </div>
             </motion.div>
