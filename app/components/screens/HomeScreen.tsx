@@ -58,8 +58,9 @@ export default function HomeScreen({
   const [taps, setTaps] = useState(0);
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
   
-  // Stato per XP guadagnata
+  // STATI PER I BADGE
   const [lastXp, setLastXp] = useState(0);
+  const [isNewCat, setIsNewCat] = useState(false); // <--- NUOVO STATO
 
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
   const activePack = PACKS[activeIndex];
@@ -108,7 +109,8 @@ export default function HomeScreen({
       
       setCredits(json.credits);
       setLastCat(json.cat);
-      setLastXp(json.xpGained || 0); // Cattura XP
+      setLastXp(json.xpGained || 0);
+      setIsNewCat(json.isNew || false); // <--- SALVIAMO SE È NUOVO
       
     } catch (err: any) {
       console.error(err);
@@ -141,6 +143,7 @@ export default function HomeScreen({
     setBusy(false);
     setSelectedPackId(null);
     setLastXp(0);
+    setIsNewCat(false); // RESET
   };
 
   const softReset = () => {
@@ -150,6 +153,7 @@ export default function HomeScreen({
     setLastCat(null);
     setBusy(false);
     setLastXp(0);
+    setIsNewCat(false); // RESET
   };
 
   useEffect(() => {
@@ -260,11 +264,10 @@ export default function HomeScreen({
           >
             <motion.div initial={{ scale: 0.5, y: 100 }} animate={{ scale: 1, y: 0 }} className="flex flex-col items-center w-full max-w-sm">
                
-               {/* IMMAGINE + BADGE XP */}
                <div className="relative mb-6">
                  <div className="absolute inset-0 bg-white/30 blur-3xl rounded-full scale-110 z-0"></div>
                  
-                 {/* BADGE XP (Novità) */}
+                 {/* BADGE XP */}
                  <motion.div 
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -273,6 +276,18 @@ export default function HomeScreen({
                  >
                     +{lastXp} XP
                  </motion.div>
+
+                 {/* BADGE "NEW!" (NUOVO!) */}
+                 {isNewCat && (
+                    <motion.div 
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.4, type: "spring" }}
+                        className="absolute -top-2 left-0 bg-yellow-400 text-yellow-900 font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform -rotate-12"
+                    >
+                        NEW!
+                    </motion.div>
+                 )}
 
                  <motion.img src={lastCat.image_url} className="relative z-10 w-56 h-56 object-contain drop-shadow-2xl animate-float" initial={{ rotate: -5 }} animate={{ rotate: 0, transition: {duration: 0.5} }} />
               </div>

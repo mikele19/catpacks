@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 type Rarity = "all" | "common" | "rare" | "epic" | "legendary" | "mythic";
 
 type Cat = {
-  id: string; // ID del tipo di gatto
+  id: string;
   name: string;
   rarity: Exclude<Rarity, "all">;
   image_url: string;
@@ -29,6 +29,15 @@ function rarityGradient(r: Exclude<Rarity, "all">) {
     case "mythic": return "from-pink-500 via-red-500 to-yellow-500";
   }
 }
+
+// Punteggio per l'ordinamento (più alto = più in alto nella lista)
+const RARITY_SCORE: Record<string, number> = {
+  common: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythic: 5
+};
 
 export default function CollectionScreen({ 
   isActive, 
@@ -53,8 +62,7 @@ export default function CollectionScreen({
     // 1. Catalogo
     const { data: catalog } = await supabase
       .from("cats_catalog")
-      .select("*")
-      .order("base_value", { ascending: true });
+      .select("*");
 
     // 2. Inventario
     const { data: inv } = await supabase
@@ -82,7 +90,6 @@ export default function CollectionScreen({
     fetchData();
   }, []);
 
-  // --- FUNZIONE VENDITA ---
   const handleSell = async () => {
     if (!selected || !selected.owned || selected.owned.count <= 0 || isSelling) return;
     setIsSelling(true);
@@ -91,40 +98,28 @@ export default function CollectionScreen({
       const rowIdToDelete = selected.owned.row_ids[selected.owned.row_ids.length - 1];
       const sellPrice = selected.base_value;
 
-      // 1. CANCELLA DAL DB (Con controllo rigoroso!)
       const { error, count } = await supabase
         .from("user_cats")
-        .delete({ count: 'exact' }) // Richiediamo il conteggio esatto delle righe cancellate
+        .delete({ count: 'exact' })
         .eq("id", rowIdToDelete);
 
       if (error) throw error;
-      
-      // SE count è 0, significa che non ha cancellato nulla (forse errore permessi o ID non trovato)
-      // Blocchiamo tutto per evitare che l'interfaccia si aggiorni falsamente.
-      if (count === 0) {
-        throw new Error("Errore: Il gatto non è stato cancellato dal database.");
-      }
+      if (count === 0) throw new Error("Errore: Il gatto non è stato cancellato dal database.");
 
-      // 2. AGGIORNA I SOLDI NEL DB
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
          const { data: profile } = await supabase.from("users_profile").select("credits").eq("user_id", user.id).single();
          const newCredits = (profile?.credits || 0) + sellPrice;
-         
          await supabase.from("users_profile").update({ credits: newCredits }).eq("user_id", user.id);
-         
-         // 3. AGGIORNA UI BARRA SOLDI (Ora funziona perché abbiamo passato setCredits)
          if (setCredits) setCredits(newCredits);
       }
 
-      // 4. AGGIORNA UI LOCALE (Rimuovi gatto dalla mappa)
       const newOwnedMap = { ...ownedMap };
       const currentOwned = newOwnedMap[selected.id];
       
       if (currentOwned) {
         currentOwned.count--;
         currentOwned.row_ids.pop();
-        
         if (currentOwned.count === 0) {
            delete newOwnedMap[selected.id];
            setSelected(null);
@@ -136,18 +131,47 @@ export default function CollectionScreen({
 
     } catch (err) {
       console.error("Errore vendita:", err);
-      alert("Impossibile vendere il gatto. Controlla la connessione o riprova.");
-      // Se fallisce, ricarichiamo i dati veri per sicurezza
+      alert("Impossibile vendere il gatto.");
       fetchData();
     } finally {
       setIsSelling(false);
     }
   };
 
+  // --- LOGICA DI ORDINAMENTO AGGIORNATA ---
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    return cats.filter(c => (!q || c.name.toLowerCase().includes(q)) && (rarity === "all" || c.rarity === rarity));
-  }, [cats, query, rarity]);
+    
+    // 1. Filtra
+    let list = cats.filter(c => 
+      (!q || c.name.toLowerCase().includes(q)) && 
+      (rarity === "all" || c.rarity === rarity)
+    );
+
+    // 2. Ordina
+    list.sort((a, b) => {
+      // A. Controlla Rarità (DECRESCENTE: Mitici prima, Comuni dopo)
+      const scoreA = RARITY_SCORE[a.rarity] || 0;
+      const scoreB = RARITY_SCORE[b.rarity] || 0;
+      
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // <--- MODIFICA QUI (B - A = Decrescente)
+      }
+
+      // B. A parità di rarità, metti prima quelli POSSEDUTI
+      const ownedA = ownedMap[a.id] ? 1 : 0;
+      const ownedB = ownedMap[b.id] ? 1 : 0;
+
+      if (ownedA !== ownedB) {
+        return ownedB - ownedA; // 1 (Posseduto) prima di 0 (Non posseduto)
+      }
+
+      // C. Ordine alfabetico
+      return a.name.localeCompare(b.name);
+    });
+
+    return list;
+  }, [cats, query, rarity, ownedMap]);
 
   return (
     <div className="h-full w-full overflow-y-auto text-black">
@@ -155,7 +179,6 @@ export default function CollectionScreen({
 
         <h1 className="text-4xl font-black tracking-tight drop-shadow-sm text-center mb-6">Collezione</h1>
 
-        {/* Search & Filter */}
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -179,7 +202,6 @@ export default function CollectionScreen({
           ))}
         </div>
 
-        {/* Grid */}
         <div className="mt-6 grid grid-cols-2 gap-4">
           {loading ? (
             <div className="font-black text-black/50 col-span-2 text-center py-10">Caricamento gatti...</div>
@@ -227,7 +249,6 @@ export default function CollectionScreen({
         </div>
       </div>
 
-      {/* --- MODALE POP-UP --- */}
       <AnimatePresence>
         {selected && (
           <motion.div
