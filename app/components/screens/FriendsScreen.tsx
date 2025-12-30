@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export default function FriendsScreen() {
   const [friends, setFriends] = useState<any[]>([]);
-  const [myId, setMyId] = useState("");
+  const [myCode, setMyCode] = useState("...");
   const [inputCode, setInputCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -15,7 +15,7 @@ export default function FriendsScreen() {
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
   const [friendCats, setFriendCats] = useState<any[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
-  const [removing, setRemoving] = useState(false); // Nuovo stato per il caricamento rimozione
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     loadFriends();
@@ -24,9 +24,19 @@ export default function FriendsScreen() {
   const loadFriends = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    setMyId(user.id);
 
-    // 1. Trova amici
+    // 1. CARICA IL TUO CODICE AMICO
+    const { data: myProfile } = await supabase
+        .from("users_profile")
+        .select("friend_code")
+        .eq("user_id", user.id)
+        .single();
+    
+    if (myProfile?.friend_code) {
+        setMyCode(myProfile.friend_code);
+    }
+
+    // 2. Trova amici
     const { data: relations } = await supabase
       .from("user_friends")
       .select("friend_id")
@@ -35,13 +45,13 @@ export default function FriendsScreen() {
     const friendIds = relations?.map(r => r.friend_id) || [];
 
     if (friendIds.length > 0) {
-      // 2. Scarica profili
+      // 3. Scarica profili amici
       const { data: profiles } = await supabase
         .from("users_profile")
         .select("user_id, email, level, xp")
         .in("user_id", friendIds);
 
-      // 3. Unisci dati
+      // 4. Unisci dati
       const friendsWithData = await Promise.all(friendIds.map(async (fid) => {
           const profile = profiles?.find(p => p.user_id === fid);
           
@@ -51,21 +61,14 @@ export default function FriendsScreen() {
               .eq("user_id", fid);
           
           if (!profile) {
-             return {
-                user_id: fid,
-                email: null,
-                level: 1,
-                xp: 0,
-                cat_count: count || 0
-             };
+             return { user_id: fid, email: null, level: 1, xp: 0, cat_count: count || 0 };
           }
-
           return { ...profile, cat_count: count || 0 };
       }));
       
       setFriends(friendsWithData);
     } else {
-      setFriends([]); // Se non ho amici, svuota la lista
+      setFriends([]);
     }
     setLoading(false);
   };
@@ -101,81 +104,70 @@ export default function FriendsScreen() {
             setFriendCats(merged || []);
         }
     } catch (e) {
-        console.error("Errore caricamento collezione amico", e);
+        console.error("Errore collezione", e);
     } finally {
         setLoadingCats(false);
     }
   };
 
-  // --- FUNZIONE RIMUOVI AMICO ---
   const removeFriend = async () => {
     if (!selectedFriend) return;
-    
-    const confirmDelete = window.confirm(`Sei sicuro di voler rimuovere ${selectedFriend.email ? selectedFriend.email.split('@')[0] : "questo amico"}?`);
+    const confirmDelete = window.confirm(`Rimuovere ${selectedFriend.email?.split('@')[0]}?`);
     if (!confirmDelete) return;
 
     setRemoving(true);
-
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
 
     try {
         const res = await fetch("/api/remove-friend", {
             method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
             body: JSON.stringify({ friendId: selectedFriend.user_id })
         });
-
         const json = await res.json();
-        
         if (json.success) {
             alert("Amico rimosso.");
-            setSelectedFriend(null); // Chiudi popup
-            loadFriends(); // Ricarica lista
+            setSelectedFriend(null);
+            loadFriends();
         } else {
             alert("Errore: " + json.error);
         }
-    } catch (err) {
-        alert("Errore di connessione");
+    } catch (err: any) {
+        alert("Errore tecnico: " + err.message);
     } finally {
         setRemoving(false);
     }
   };
-  // ------------------------------
 
   const copyInviteLink = () => {
-    const link = `${window.location.origin}?invite=${myId}`;
-    navigator.clipboard.writeText(link);
-    alert("Link copiato! Invialo a un amico.");
+    navigator.clipboard.writeText(myCode);
+    alert(`Codice ${myCode} copiato!`);
   };
 
-  const addFriend = async (input: string) => {
-    if (!input) return;
+  const addFriend = async () => {
+    if (!inputCode) return;
     setAdding(true);
 
-    const uuidMatch = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    const cleanId = uuidMatch ? uuidMatch[0] : input.trim();
+    let codeClean = inputCode.trim();
+    if (codeClean.includes("invite=")) {
+        codeClean = codeClean.split("invite=")[1];
+    }
     
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
 
     const res = await fetch("/api/add-friend", {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ friendId: cleanId })
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ friendCode: codeClean })
     });
 
     const json = await res.json();
     setAdding(false);
 
     if (json.success) {
-      alert("Amico aggiunto con successo!");
+      alert("Amico aggiunto!");
       setInputCode("");
       loadFriends(); 
     } else {
@@ -188,17 +180,17 @@ export default function FriendsScreen() {
       <div className="px-5 pt-10 max-w-md mx-auto">
         <h1 className="text-4xl font-black mb-6 text-center drop-shadow-sm">Amici</h1>
 
-        {/* BOX INVITO */}
-        <div className="soft-ui bg-yellow-100 border-2 border-yellow-300 p-6 rounded-3xl mb-6 text-center">
-            <div className="text-sm font-bold text-yellow-800 uppercase tracking-widest mb-2">Il tuo Codice Amico</div>
-            <div className="bg-white/50 p-3 rounded-xl font-mono text-xs truncate select-all mb-3">
-                {myId || "..."}
+        {/* BOX CODICE AMICO */}
+        <div className="soft-ui bg-yellow-100 border-2 border-yellow-300 p-6 rounded-3xl mb-6 text-center relative overflow-hidden">
+            <div className="text-sm font-bold text-yellow-800 uppercase tracking-widest mb-2">Il tuo Codice</div>
+            <div className="text-4xl font-black text-yellow-900 tracking-widest mb-4 font-mono">
+                {myCode}
             </div>
             <button 
                 onClick={copyInviteLink}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white font-black text-xs uppercase px-6 py-3 rounded-xl shadow-lg active:scale-95 transition-all w-full"
             >
-                Copia Link Invito 🔗
+                Copia Codice 📋
             </button>
         </div>
 
@@ -209,13 +201,13 @@ export default function FriendsScreen() {
                 <input 
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value)}
-                    placeholder="Incolla link o codice..."
-                    className="flex-1 bg-gray-100 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition"
+                    placeholder="Esempio: 123-456"
+                    className="flex-1 bg-gray-100 rounded-xl px-4 py-3 font-bold text-lg text-center tracking-widest outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition uppercase placeholder:text-sm placeholder:normal-case"
                 />
                 <button 
-                    onClick={() => addFriend(inputCode)}
+                    onClick={addFriend}
                     disabled={adding || !inputCode}
-                    className="bg-black text-white font-black rounded-xl px-4 active:scale-95 disabled:opacity-50"
+                    className="bg-black text-white font-black rounded-xl px-5 text-xl active:scale-95 disabled:opacity-50"
                 >
                     {adding ? "..." : "+"}
                 </button>
@@ -231,7 +223,7 @@ export default function FriendsScreen() {
             <div className="text-center py-10 opacity-50">
                 <div className="text-4xl mb-2">😢</div>
                 <div className="font-bold">Ancora nessun amico</div>
-                <div className="text-xs">Invia il tuo link a qualcuno!</div>
+                <div className="text-xs">Scambia il codice con qualcuno!</div>
             </div>
         ) : (
             <div className="space-y-3">
@@ -255,7 +247,7 @@ export default function FriendsScreen() {
                                 <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-md">🐱 {f.cat_count} Gatti</span>
                             </div>
                         </div>
-                        <div className="text-2xl opacity-20">👉</div>
+                        {/* EMOJI RIMOSSA QUI */}
                     </button>
                 ))}
             </div>
@@ -279,7 +271,6 @@ export default function FriendsScreen() {
                     className="bg-white w-full max-w-sm max-h-[80vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Intestazione Popup */}
                     <div className="text-center mb-4">
                         <div className="text-sm font-bold text-gray-400 uppercase tracking-widest">Collezione di</div>
                         <h3 className="text-2xl font-black truncate">
@@ -294,7 +285,6 @@ export default function FriendsScreen() {
                         ✕
                     </button>
 
-                    {/* Contenuto Griglia */}
                     <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2 mb-4">
                         {loadingCats ? (
                             <div className="flex items-center justify-center h-40 font-bold text-gray-400">Caricamento...</div>
@@ -319,7 +309,6 @@ export default function FriendsScreen() {
                         )}
                     </div>
 
-                    {/* TASTO RIMUOVI AMICO */}
                     <button
                         onClick={removeFriend}
                         disabled={removing}
