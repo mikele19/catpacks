@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient"; 
 import SwipeTabs, { TabKey } from "@/app/components/SwipeTabs";
 import BottomNav from "@/app/components/BottomNav";
 import HomeScreen from "@/app/components/screens/HomeScreen";
@@ -35,7 +35,7 @@ export default function AppShell() {
 
   if (loading) return <div className="min-h-screen bg-yellow-400" />;
 
-  // SE NON SIAMO LOGGATI
+  // SE NON SIAMO LOGGATI -> Mostra LoginScreen
   if (!session) {
     return (
         <div 
@@ -47,7 +47,7 @@ export default function AppShell() {
     );
   }
 
-  // SE SIAMO LOGGATI
+  // SE SIAMO LOGGATI -> Mostra l'APP
   return (
     <div 
       className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat text-black"
@@ -61,11 +61,12 @@ export default function AppShell() {
           onRedeem={handleRedeem}
         />
 
-        {/* MODIFICA FONDAMENTALE: Ora passiamo setCredits anche qui! */}
+        {/* --- MODIFICA FONDAMENTALE --- */}
+        {/* Abbiamo aggiunto setCredits={setCredits} qui sotto! */}
         <CollectionScreen 
            key="collection" 
            isActive={tab === "collection"} 
-           setCredits={setCredits} 
+           setCredits={setCredits}
         />
         
         <ProfileScreen key="profile" />
