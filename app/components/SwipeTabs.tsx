@@ -3,10 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import React, { ReactNode, useEffect, useState } from "react";
 
-// Definiamo le chiavi possibili
 export type TabKey = "home" | "collection" | "friends" | "profile";
 
-// ORDINE ESATTO: Deve coincidere con l'AppShell!
+// L'ordine deve corrispondere a quello in AppShell
 const order: TabKey[] = ["home", "collection", "friends", "profile"];
 
 export default function SwipeTabs({
@@ -35,13 +34,22 @@ export default function SwipeTabs({
     exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
   };
 
-  // PROTEZIONE: Se la pagina non esiste, evita che tutto diventi bianco
-  const pageContent = children[currentIndex];
+  // USA React.Children.toArray per sicurezza
+  const childrenArray = React.Children.toArray(children);
+  const pageContent = childrenArray[currentIndex];
 
   if (!pageContent) {
     return (
-      <div className="h-full flex items-center justify-center font-bold text-red-500 bg-white/80 m-4 rounded-xl">
-        Errore: Pagina "{tab}" non trovata o indice errato.
+      <div className="h-full flex flex-col items-center justify-center p-4 text-center">
+        <div className="bg-white/90 p-6 rounded-2xl shadow-xl">
+          <h2 className="text-xl font-black text-red-500 mb-2">Errore Navigazione</h2>
+          <p className="text-sm font-bold text-gray-600">
+             Impossibile trovare la pagina: <span className="uppercase">{tab}</span>
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+             Controlla che FriendsScreen sia importato in AppShell.tsx
+          </p>
+        </div>
       </div>
     );
   }
