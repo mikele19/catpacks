@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI ---
+// --- CONFIGURAZIONE PACCHI (COLORI VIVACI) ---
 const PACKS = [
   { 
     id: 'basic', 
@@ -192,12 +192,16 @@ export default function HomeScreen({
   if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    <div className="h-full w-full overflow-hidden relative flex flex-col bg-stone-900">
+    // 1. SFONDO BASE (Gradiente Giallo/Arancio) + RAGGIERA CSS
+    <div className="h-full w-full overflow-hidden relative flex flex-col"
+         style={{
+           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)"
+         }}>
       
-      {/* SFONDO ROTANTE */}
-      <div className="absolute top-1/2 left-1/2 w-[250vmax] h-[250vmax] -translate-x-1/2 -translate-y-1/2 bg-[url('/ui/bg.png')] bg-cover bg-center animate-spin-slow pointer-events-none z-0"></div>
+      {/* Raggiera che ruota (CSS puro) */}
+      <div className="absolute inset-[-50%] w-[200%] h-[200%] opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
 
-      {/* FLASH */}
+      {/* FLASH OVERLAY */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
@@ -211,17 +215,16 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* --- HEADER COMPATTO --- */}
-      {/* Ridotto padding e dimensioni per stare su schermi piccoli */}
+      {/* --- HEADER COMPATTO (h-10) --- */}
       <div className="pt-4 px-3 flex items-center justify-between gap-2 w-full max-w-md mx-auto z-20 relative">
          
-         {/* Monete: "w-auto" invece di flex-1 per togliere lo spazio vuoto extra */}
+         {/* Monete Compatte */}
          <div className="h-10 soft-ui-sm flex items-center px-4 gap-2 bg-white/90 backdrop-blur-sm shrink-0">
             <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
             <span className="font-black text-lg pt-0.5 text-yellow-900">{credits}</span>
          </div>
 
-         {/* Bottoni Destra: Più piccoli (h-10 invece di h-14) */}
+         {/* Bottoni Destra Compatti (h-10 w-10) */}
          <div className="flex items-center gap-2">
              <button 
                 onClick={claimDaily} 
@@ -236,7 +239,7 @@ export default function HomeScreen({
          </div>
       </div>
 
-      {/* CENTRO */}
+      {/* CENTRO (Layout Ottimizzato) */}
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10 pb-16">
         <AnimatePresence mode="wait">
           
@@ -249,11 +252,10 @@ export default function HomeScreen({
               exit={{ opacity: 0, scale: 1.2 }}
               className="w-full flex flex-col items-center justify-center"
             >
-              {/* Logo ridotto leggermente */}
               <img src="/ui/logo.png" alt="Logo" className="w-48 mb-4 drop-shadow-xl" />
 
               <div className="relative w-full max-w-sm h-56 flex items-center justify-center perspective-500">
-                {/* Tasti laterali più piccoli (h-10 w-10) */}
+                {/* Frecce Piccole (h-10 w-10) */}
                 <button onClick={prevPack} className="absolute left-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
                 
                 <motion.div className="absolute left-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -25, rotateY: -25 }}>
@@ -288,7 +290,6 @@ export default function HomeScreen({
                      </div>
                  </div>
 
-                 {/* Tasto SCEGLI compatto */}
                  <button 
                     onClick={selectCurrentPack} 
                     className="w-full max-w-[240px] soft-ui soft-btn py-3 font-black text-lg uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
@@ -300,7 +301,7 @@ export default function HomeScreen({
             </motion.div>
           ) : (
             
-            /* FASE 2: APERTURA (Tasto Indietro più piccolo) */
+            /* FASE 2: APERTURA (Tasto Indietro Piccolo) */
             <motion.div 
               key="opening"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -377,8 +378,9 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-        @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 60s linear infinite; }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Animazione lenta (40s) per non disturbare */
+        .animate-spin-slow { animation: spin-slow 40s linear infinite; }
         
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
