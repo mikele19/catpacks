@@ -3,25 +3,35 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-// Ora accettiamo 'isActive' per sapere quando ricaricare i dati
 export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
   const [profile, setProfile] = useState<any>(null);
   const [catCount, setCatCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Funzione che scarica i dati dal database
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return;
 
-    // 1. Carica Profilo (Livello, XP)
+    // 1. Carica Profilo
     const { data: profileData } = await supabase
       .from("users_profile")
       .select("*")
       .eq("user_id", user.id)
       .single();
     
-    // 2. Conta Gatti Posseduti
+    // --- MODIFICA QUI: SALVATAGGIO AUTOMATICO EMAIL ---
+    // Se nel database l'email manca o è diversa da quella attuale, aggiornala!
+    if (user.email && profileData?.email !== user.email) {
+       await supabase
+         .from("users_profile")
+         .update({ email: user.email })
+         .eq("user_id", user.id);
+       // Aggiorniamo anche il dato locale per vederlo subito
+       if (profileData) profileData.email = user.email;
+    }
+    // --------------------------------------------------
+
+    // 2. Conta Gatti
     const { count } = await supabase
       .from("user_cats")
       .select("*", { count: 'exact', head: true }) 
@@ -32,12 +42,8 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
     setLoading(false);
   }, []);
 
-  // Carica all'avvio
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Carica OGNI VOLTA che clicchi sul tasto Profilo (isActive diventa true)
   useEffect(() => {
     if (isActive) {
       loadData();
@@ -51,10 +57,9 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
 
   if (loading && !profile) return <div className="h-full flex items-center justify-center font-black text-black/50">Caricamento...</div>;
 
-  // Calcoli per la barra livello
   const currentLevel = profile?.level || 1;
   const currentXp = profile?.xp || 0;
-  const xpNeeded = currentLevel * 100; // Formula: 100 * Livello
+  const xpNeeded = currentLevel * 100;
   const progressPercent = Math.min(100, (currentXp / xpNeeded) * 100);
 
   return (
@@ -63,9 +68,7 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
         
         <h1 className="text-4xl font-black tracking-tight drop-shadow-sm mb-6 text-center">Profilo</h1>
         
-        {/* CARD PROFILO (Uso 'soft-ui' per coerenza) */}
         <div className="soft-ui bg-white/90 p-6 mb-6 relative overflow-hidden">
-            {/* Decorazione sfondo */}
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-yellow-300 rounded-full blur-2xl opacity-40"></div>
 
             <div className="relative z-10">
@@ -83,7 +86,6 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
                     </div>
                 </div>
 
-                {/* BARRA XP */}
                 <div className="mt-6">
                     <div className="flex justify-between text-[10px] font-black text-black/40 mb-1.5 uppercase tracking-wide">
                         <span>XP {currentXp}</span>
@@ -102,7 +104,6 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
             </div>
         </div>
 
-        {/* LOGOUT */}
         <div className="soft-ui bg-white/80 p-6 flex items-center justify-between">
             <div className="font-black text-lg">Sessione</div>
             <button 
