@@ -2,9 +2,11 @@
 
 import type { TabKey } from "./SwipeTabs";
 
+// AGGIUNTO IL TAB FRIENDS (👥)
 const tabs: { label: string; key: TabKey; icon: string }[] = [
   { label: "Home", key: "home", icon: "🏠" },
   { label: "Collezione", key: "collection", icon: "🃏" },
+  { label: "Amici", key: "friends", icon: "👥" }, // <--- NUOVO
   { label: "Profilo", key: "profile", icon: "👤" },
 ];
 
@@ -18,14 +20,14 @@ export default function BottomNav({
  {
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4" // Padding bottom ridotto
+      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4"
       onTouchStart={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       
-      {/* h-16 invece di h-20: Barra più sottile */}
-      <div className="mx-auto max-w-md soft-ui bg-white/90 backdrop-blur-md flex items-center justify-around h-16 px-2 rounded-[30px]">
-        
+      <div className="mx-auto max-w-md sticker bg-white/90 backdrop-blur-md shadow-2xl">
+        {/* Cambiato grid-cols-3 in grid-cols-4 per farci stare il 4° bottone */}
+        <div className="grid grid-cols-4">
           {tabs.map((t) => {
             const active = tab === t.key;
 
@@ -33,22 +35,26 @@ export default function BottomNav({
               <button
                 key={t.key}
                 onClick={() => onTabChange(t.key)}
-                className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform duration-200"
+                className="relative py-3 active:scale-[0.95] transition-transform"
               >
-                <div className={`text-xl leading-none transition-all duration-300 ${active ? "scale-110 -translate-y-1 grayscale-0" : "opacity-40 grayscale scale-100"}`}>
-                  {t.icon}
-                </div>
+                <div className="flex flex-col items-center gap-1">
+                  
+                  <div className={`text-2xl leading-none transition-all ${active ? "scale-110 blur-none" : "opacity-40 grayscale scale-100"}`}>
+                    {t.icon}
+                  </div>
 
-                <div className={`text-[9px] font-black tracking-widest uppercase transition-colors duration-300 ${active ? "text-gray-800" : "text-gray-400"}`}>
-                  {t.label}
+                  <div className={`text-[10px] font-black tracking-wide ${active ? "text-black" : "text-black/40"}`}>
+                    {t.label}
+                  </div>
                 </div>
 
                 {active && (
-                  <div className="absolute bottom-1.5 w-1 h-1 bg-gray-800 rounded-full" />
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 h-[3px] w-6 rounded-full bg-black" />
                 )}
               </button>
             );
           })}
+        </div>
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ function rarityGradient(r: Exclude<Rarity, "all">) {
   }
 }
 
-// Punteggio per l'ordinamento (più alto = più in alto nella lista)
+// Punteggio Rarità (5 = Mitico, 1 = Comune)
 const RARITY_SCORE: Record<string, number> = {
   common: 1,
   rare: 2,
@@ -150,23 +150,23 @@ export default function CollectionScreen({
 
     // 2. Ordina
     list.sort((a, b) => {
-      // A. Controlla Rarità (DECRESCENTE: Mitici prima, Comuni dopo)
-      const scoreA = RARITY_SCORE[a.rarity] || 0;
-      const scoreB = RARITY_SCORE[b.rarity] || 0;
-      
-      if (scoreA !== scoreB) {
-        return scoreB - scoreA; // <--- MODIFICA QUI (B - A = Decrescente)
-      }
-
-      // B. A parità di rarità, metti prima quelli POSSEDUTI
+      // A. PRIMA REGOLA: POSSEDUTI PRIMA!
       const ownedA = ownedMap[a.id] ? 1 : 0;
       const ownedB = ownedMap[b.id] ? 1 : 0;
 
       if (ownedA !== ownedB) {
-        return ownedB - ownedA; // 1 (Posseduto) prima di 0 (Non posseduto)
+        return ownedB - ownedA; // 1 (Ho il gatto) vince su 0 (Non ce l'ho)
       }
 
-      // C. Ordine alfabetico
+      // B. SECONDA REGOLA: RARITÀ (Mitici prima)
+      const scoreA = RARITY_SCORE[a.rarity] || 0;
+      const scoreB = RARITY_SCORE[b.rarity] || 0;
+      
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // Decrescente (5 -> 1)
+      }
+
+      // C. TERZA REGOLA: NOME
       return a.name.localeCompare(b.name);
     });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-export type TabKey = "home" | "collection" | "profile";
+export type TabKey = "home" | "collection" | "friends" | "profile";
 
 export default function SwipeTabs({
   tab,

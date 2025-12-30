@@ -8,6 +8,7 @@ import HomeScreen from "@/app/components/screens/HomeScreen";
 import CollectionScreen from "@/app/components/screens/CollectionScreen";
 import ProfileScreen from "@/app/components/screens/ProfileScreen";
 import LoginScreen from "@/app/components/screens/LoginScreen";
+import FriendsScreen from "@/app/components/screens/FriendsScreen"; // <--- IMPORTA
 
 export default function AppShell() {
   const [session, setSession] = useState<any>(null);
@@ -63,8 +64,10 @@ export default function AppShell() {
            isActive={tab === "collection"} 
            setCredits={setCredits}
         />
+
+        {/* --- NUOVA PAGINA AMICI --- */}
+        <FriendsScreen key="friends" />
         
-        {/* MODIFICA QUI: Aggiungi isActive={tab === "profile"} */}
         <ProfileScreen 
            key="profile" 
            isActive={tab === "profile"} 
