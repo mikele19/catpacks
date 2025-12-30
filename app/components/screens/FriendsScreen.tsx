@@ -177,61 +177,63 @@ export default function FriendsScreen() {
 
   return (
     <div className="h-full w-full overflow-y-auto text-black pb-32">
-      <div className="px-5 pt-8 max-w-md mx-auto"> {/* pt-10 ridotto a pt-8 */}
-        <h1 className="text-4xl font-black mb-4 text-center drop-shadow-sm">Amici</h1> {/* mb-6 ridotto a mb-4 */}
+      <div className="px-5 pt-8 max-w-md mx-auto"> 
+        <h1 className="text-4xl font-black mb-4 text-center drop-shadow-sm">Amici</h1> 
 
-        {/* BOX CODICE AMICO - RIDIMENSIONATO */}
-        <div className="soft-ui bg-yellow-100 border-2 border-yellow-300 p-4 rounded-3xl mb-4 text-center relative overflow-hidden"> {/* p-6->p-4, mb-6->mb-4 */}
-            <div className="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-1">Il tuo Codice</div> {/* text-sm->text-xs, mb-2->mb-1 */}
-            <div className="text-3xl font-black text-yellow-900 tracking-widest mb-3 font-mono"> {/* text-4xl->text-3xl, mb-4->mb-3 */}
+        {/* BOX CODICE AMICO */}
+        <div className="soft-ui bg-yellow-100 border-2 border-yellow-300 p-4 rounded-3xl mb-4 text-center relative overflow-hidden">
+            <div className="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-1">Il tuo Codice</div> 
+            <div className="text-3xl font-black text-yellow-900 tracking-widest mb-3 font-mono">
                 {myCode}
             </div>
             <button 
                 onClick={copyInviteLink}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white font-black text-xs uppercase px-6 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all w-full" /* py-3 -> py-2.5 */
+                className="bg-yellow-500 hover:bg-yellow-600 text-white font-black text-xs uppercase px-6 py-2.5 rounded-xl shadow-lg active:scale-95 transition-all w-full"
             >
                 Copia Codice 📋
             </button>
         </div>
 
-        {/* BOX AGGIUNGI - RIDIMENSIONATO */}
-        <div className="soft-ui bg-white/90 p-4 rounded-3xl mb-6"> {/* p-6->p-4, mb-8->mb-6 */}
-            <h3 className="font-black text-lg mb-3">Aggiungi Amico</h3> {/* mb-4 -> mb-3 */}
-            <div className="flex gap-2">
+        {/* BOX AGGIUNGI AMICO - CORRETTO */}
+        <div className="soft-ui bg-white/90 p-3 rounded-3xl mb-6">
+            <h3 className="font-black text-sm mb-2 px-1">Aggiungi Amico</h3>
+            <div className="flex gap-2 items-center w-full">
+                {/* Input che si adatta ma non esplode */}
                 <input 
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value)}
                     placeholder="Esempio: 123-456"
-                    className="flex-1 bg-gray-100 rounded-xl px-4 py-2.5 font-bold text-lg text-center tracking-widest outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition uppercase placeholder:text-sm placeholder:normal-case" /* py-3 -> py-2.5 */
+                    className="flex-1 min-w-0 bg-gray-100 rounded-xl px-3 py-3 font-bold text-sm text-center uppercase tracking-wider outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition placeholder:normal-case placeholder:text-gray-400"
                 />
+                
+                {/* Tasto + fisso e quadrato */}
                 <button 
                     onClick={addFriend}
                     disabled={adding || !inputCode}
-                    className="bg-black text-white font-black rounded-xl px-5 text-xl active:scale-95 disabled:opacity-50"
+                    className="w-12 h-12 shrink-0 bg-black text-white font-black rounded-xl flex items-center justify-center text-xl active:scale-95 disabled:opacity-50"
                 >
                     {adding ? "..." : "+"}
                 </button>
             </div>
         </div>
 
-        {/* LISTA AMICI - SPAZIATURA RIDOTTA */}
-        <h3 className="font-black text-xl mb-3 px-2">I tuoi amici ({friends.length})</h3> {/* mb-4 -> mb-3 */}
+        {/* LISTA AMICI */}
+        <h3 className="font-black text-xl mb-3 px-2">I tuoi amici ({friends.length})</h3> 
         
         {loading ? (
             <div className="text-center text-gray-400 font-bold">Caricamento...</div>
         ) : friends.length === 0 ? (
-            <div className="text-center py-8 opacity-50"> {/* py-10 -> py-8 */}
+            <div className="text-center py-8 opacity-50"> 
                 <div className="text-4xl mb-2">😢</div>
                 <div className="font-bold">Ancora nessun amico</div>
                 <div className="text-xs">Scambia il codice con qualcuno!</div>
             </div>
         ) : (
-            <div className="space-y-2.5"> {/* space-y-3 -> space-y-2.5 */}
+            <div className="space-y-2.5">
                 {friends.map((f) => (
                     <button 
                         key={f.user_id} 
                         onClick={() => openFriendCollection(f)}
-                        // PADDING RIDOTTO QUI SOTTO (py-3 px-4 invece di p-4)
                         className="w-full bg-white py-3 px-4 rounded-2xl shadow-sm border-b-4 border-gray-100 flex items-center gap-4 active:scale-95 transition-transform text-left group"
                     >
                         <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center text-white shadow-md border-2 border-white transition-transform group-hover:scale-110 ${f.email ? 'bg-gradient-to-br from-blue-400 to-purple-500' : 'bg-gray-300'}`}>
@@ -254,7 +256,7 @@ export default function FriendsScreen() {
         )}
       </div>
 
-      {/* --- POPUP COLLEZIONE AMICO (Invariato) --- */}
+      {/* --- POPUP COLLEZIONE AMICO --- */}
       <AnimatePresence>
         {selectedFriend && (
             <motion.div
