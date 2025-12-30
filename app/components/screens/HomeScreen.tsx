@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI (COLORI VIVACI) ---
+// --- CONFIGURAZIONE PACCHI ---
 const PACKS = [
   { 
     id: 'basic', name: 'Standard', cost: 10, img: '/ui/box-standard.png',
@@ -58,7 +58,7 @@ export default function HomeScreen({
   const [taps, setTaps] = useState(0);
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
   
-  // NUOVO: Stato per l'XP guadagnata
+  // Stato per XP guadagnata
   const [lastXp, setLastXp] = useState(0);
 
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
@@ -108,7 +108,7 @@ export default function HomeScreen({
       
       setCredits(json.credits);
       setLastCat(json.cat);
-      setLastXp(json.xpGained || 0); // Salviamo l'XP guadagnata
+      setLastXp(json.xpGained || 0); // Cattura XP
       
     } catch (err: any) {
       console.error(err);
