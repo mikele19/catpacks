@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import React, { ReactNode, useEffect, useState } from "react";
 
+// AGGIUNTO "friends"
 export type TabKey = "home" | "collection" | "friends" | "profile";
+
+// ORDINE ESATTO DELLE TABS (Deve corrispondere ai figli in AppShell)
+const order: TabKey[] = ["home", "collection", "friends", "profile"];
 
 export default function SwipeTabs({
   tab,
@@ -11,84 +16,56 @@ export default function SwipeTabs({
 }: {
   tab: TabKey;
   onTabChange: (t: TabKey) => void;
-  children: React.ReactNode[];
-})
- {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const isProgrammaticScroll = useRef(false);
-
-  const index = useMemo(() => {
-    if (tab === "home") return 0;
-    if (tab === "collection") return 1;
-    return 2;
-  }, [tab]);
+  children: ReactNode[];
+}) {
+  // Trova l'indice della tab attiva (es: home=0, collection=1, friends=2, profile=3)
+  const currentIndex = order.indexOf(tab);
+  
+  // Stato per la direzione dello swipe
+  const [direction, setDirection] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(currentIndex);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    
-    isProgrammaticScroll.current = true;
-    const w = el.clientWidth;
-    el.scrollTo({ left: index * w, behavior: "smooth" });
+    if (currentIndex > prevIndex) {
+      setDirection(1); // Vai a destra
+    } else if (currentIndex < prevIndex) {
+      setDirection(-1); // Vai a sinistra
+    }
+    setPrevIndex(currentIndex);
+  }, [currentIndex]);
 
-    const timeout = setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 600);
-
-    return () => clearTimeout(timeout);
-  }, [index]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    let raf = 0;
-    const onScroll = () => {
-      if (isProgrammaticScroll.current) return;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const w = el.clientWidth || 1;
-        const i = Math.round(el.scrollLeft / w);
-        const next: TabKey = i === 0 ? "home" : i === 1 ? "collection" : "profile";
-        if (next !== tab) onTabChange(next);
-      });
-    };
-
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, [onTabChange, tab]);
+  const variants = {
+    enter: (dir: number) => ({
+      x: dir > 0 ? 300 : -300,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? -300 : 300,
+      opacity: 0,
+    }),
+  };
 
   return (
-    <div
-      ref={ref}
-      // MODIFICA CRUCIALE: fixed inset-0 blocca la pagina.
-      // overflow-y-hidden impedisce lo scroll verticale generale.
-      className={`
-        fixed inset-0 h-[100dvh] w-full
-        overflow-x-auto overflow-y-hidden
-        flex
-        snap-x snap-mandatory
-        scroll-smooth
-        overscroll-y-none
-        [-webkit-overflow-scrolling:touch]
-      `}
-    >
-      <style jsx>{`
-        div::-webkit-scrollbar { display: none; }
-      `}</style>
-
-      {children.map((child, i) => (
-        // Ogni sezione è alta esattamente quanto lo schermo (h-full) e larga quanto lo schermo
-        <section
-          key={i}
-          className="w-screen h-full flex-shrink-0 snap-start overflow-hidden relative"
+    <div className="relative w-full h-full overflow-hidden">
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={tab}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="w-full h-full absolute inset-0"
         >
-          {child}
-        </section>
-      ))}
+          {/* Mostra il figlio corrispondente all'indice */}
+          {children[currentIndex]}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import type { TabKey } from "./SwipeTabs";
 const tabs: { label: string; key: TabKey; icon: string }[] = [
   { label: "Home", key: "home", icon: "🏠" },
   { label: "Collezione", key: "collection", icon: "🃏" },
-  { label: "Amici", key: "friends", icon: "👥" },
+  { label: "Amici", key: "friends", icon: "👥" }, // 4 TAB
   { label: "Profilo", key: "profile", icon: "👤" },
 ];
 
@@ -23,10 +23,9 @@ export default function BottomNav({
       onTouchStart={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      {/* QUI ERA L'ERRORE: Ho rimesso 'soft-ui' al posto di 'sticker' */}
+      {/* soft-ui per l'effetto cuscinetto + griglia a 4 colonne */}
       <div className="mx-auto max-w-md soft-ui bg-white/90 backdrop-blur-md shadow-2xl rounded-[40px] px-2 h-20 flex items-center">
         
-        {/* Griglia a 4 colonne per i 4 tasti */}
         <div className="grid grid-cols-4 w-full">
           {tabs.map((t) => {
             const active = tab === t.key;
