@@ -15,6 +15,7 @@ export default function FriendsScreen() {
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
   const [friendCats, setFriendCats] = useState<any[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
+  const [removing, setRemoving] = useState(false); // Nuovo stato per il caricamento rimozione
 
   useEffect(() => {
     loadFriends();
@@ -63,6 +64,8 @@ export default function FriendsScreen() {
       }));
       
       setFriends(friendsWithData);
+    } else {
+      setFriends([]); // Se non ho amici, svuota la lista
     }
     setLoading(false);
   };
@@ -73,31 +76,27 @@ export default function FriendsScreen() {
     setFriendCats([]);
 
     try {
-        // 1. Prendi l'inventario dell'amico
         const { data: inventory } = await supabase
             .from("user_cats")
             .select("cat_id")
             .eq("user_id", friend.user_id);
 
         if (inventory && inventory.length > 0) {
-            // Conta le quantità (es. Jolly x2)
             const counts: Record<string, number> = {};
             inventory.forEach((item: any) => {
                 counts[item.cat_id] = (counts[item.cat_id] || 0) + 1;
             });
 
-            // 2. Scarica i dettagli dei gatti (nome, immagine)
             const catIds = Object.keys(counts);
             const { data: catalog } = await supabase
                 .from("cats_catalog")
                 .select("*")
                 .in("id", catIds);
             
-            // Unisci quantità e dettagli
             const merged = catalog?.map(cat => ({
                 ...cat,
                 count: counts[cat.id]
-            })).sort((a, b) => b.base_value - a.base_value); // Ordina per valore
+            })).sort((a, b) => b.base_value - a.base_value);
 
             setFriendCats(merged || []);
         }
@@ -107,6 +106,45 @@ export default function FriendsScreen() {
         setLoadingCats(false);
     }
   };
+
+  // --- FUNZIONE RIMUOVI AMICO ---
+  const removeFriend = async () => {
+    if (!selectedFriend) return;
+    
+    const confirmDelete = window.confirm(`Sei sicuro di voler rimuovere ${selectedFriend.email ? selectedFriend.email.split('@')[0] : "questo amico"}?`);
+    if (!confirmDelete) return;
+
+    setRemoving(true);
+
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    try {
+        const res = await fetch("/api/remove-friend", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ friendId: selectedFriend.user_id })
+        });
+
+        const json = await res.json();
+        
+        if (json.success) {
+            alert("Amico rimosso.");
+            setSelectedFriend(null); // Chiudi popup
+            loadFriends(); // Ricarica lista
+        } else {
+            alert("Errore: " + json.error);
+        }
+    } catch (err) {
+        alert("Errore di connessione");
+    } finally {
+        setRemoving(false);
+    }
+  };
+  // ------------------------------
 
   const copyInviteLink = () => {
     const link = `${window.location.origin}?invite=${myId}`;
@@ -238,7 +276,7 @@ export default function FriendsScreen() {
                     initial={{ scale: 0.8, y: 50 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.8, y: 50 }}
-                    className="bg-white w-full max-w-sm max-h-[70vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl"
+                    className="bg-white w-full max-w-sm max-h-[80vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Intestazione Popup */}
@@ -257,7 +295,7 @@ export default function FriendsScreen() {
                     </button>
 
                     {/* Contenuto Griglia */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2">
+                    <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2 mb-4">
                         {loadingCats ? (
                             <div className="flex items-center justify-center h-40 font-bold text-gray-400">Caricamento...</div>
                         ) : friendCats.length === 0 ? (
@@ -280,6 +318,16 @@ export default function FriendsScreen() {
                             </div>
                         )}
                     </div>
+
+                    {/* TASTO RIMUOVI AMICO */}
+                    <button
+                        onClick={removeFriend}
+                        disabled={removing}
+                        className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-2xl hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2 border-2 border-transparent hover:border-red-200"
+                    >
+                        {removing ? "Rimozione..." : "🗑️ Rimuovi Amico"}
+                    </button>
+
                 </motion.div>
             </motion.div>
         )}
