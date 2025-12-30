@@ -1,88 +1,92 @@
 @import "tailwindcss";
 
+/* === LE TUE VARIABILI ORIGINALI === */
 :root {
   --red: #FF1E1E;
   --orange: #FF7A00;
   --yellow: #FFC400;
-
   --purple: #C600FF;
   --green: #4DFF00;
   --cyan: #00E5FF;
-
   --black: #0B0B0B;
   --white: #FFFFFF;
+
+  /* Font */
+  --font-baloo: "Baloo 2", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-/* Paper background (dark) */
-/* === PAPER LIGHT THEME (2025) === */
-:root {
-  --paper: #f3f1ea;
-  --ink: #121212;
-  --ink2: rgba(0,0,0,.55);
-  --line: rgba(0,0,0,.14);
-}
-
-html,
-body {
+/* === SETUP GENERALE === */
+html, body {
   margin: 0;
   padding: 0;
-  background: transparent;
+  height: 100%;
 }
-/* puntinato leggero (carta) */
+
 body {
-  min-height: 100vh;
+  /* SFONDO GRIGIO "SOFT UI" PER TUTTA L'APP */
+  background-color: #e0e0e0;
+  color: #4b5563; /* Testo grigio scuro */
+  font-family: var(--font-baloo), system-ui;
   overflow-x: hidden;
 }
 
-/* elementi "sticker" (NO blur) */
-.sticker {
-  background: rgba(255,255,255,.72);
-  border: 2px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 2px 4px 0 rgba(0,0,0,.18);
+/* === STILE SOFT UI (NEUMORPHISM) === */
+
+/* 1. Classe Base per Card e Bottoni */
+.soft-ui {
+  /* Forma */
+  border-radius: 30px;
+  
+  /* Bordo sottile semi-trasparente per dare l'effetto lucido/plastica */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  
+  /* OMBRE NEUTRE (Funzionano su qualsiasi colore di sfondo della card) */
+  box-shadow: 
+    12px 12px 24px rgba(0, 0, 0, 0.15),   /* Ombra scura morbida */
+    -12px -12px 24px rgba(255, 255, 255, 0.6); /* Luce bianca morbida */
+    
+  /* Nota: Non metto "background-color" qui, così puoi usare bg-yellow-300 nel codice React */
 }
 
-/* pulsanti stile "scritta" */
-.ink-action {
-  font-weight: 900;
-  text-decoration: underline;
-  text-underline-offset: 6px;
+/* 2. Variante Piccola (per monete, icone header) */
+.soft-ui-sm {
+  border-radius: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    6px 6px 12px rgba(0, 0, 0, 0.15),
+    -6px -6px 12px rgba(255, 255, 255, 0.6);
 }
 
-/* testo secondario */
-.muted {
-  color: var(--ink2);
+/* 3. Effetto Bottone Premuto */
+.soft-btn {
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* pack drop shadow (leggera) */
-.pack-shadow {
-  filter: drop-shadow(0 14px 22px rgba(0,0,0,.20));
+.soft-btn:active {
+  transform: scale(0.96); /* Si rimpicciolisce leggermente */
+  box-shadow: 
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.4);
 }
 
-body {
-  font-family: var(--font-baloo), system-ui, -apple-system, Segoe UI, Roboto, Arial;
-}
-
+/* === ANIMAZIONI UTILITY === */
 .pack-idle {
   animation: packBreathe 2.4s ease-in-out infinite;
 }
 
 @keyframes packBreathe {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.035);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
 }
 
 .animate-pack-breathe {
   animation: packBreathe 2.4s ease-in-out infinite;
+}
+
+/* Gestione Dark Mode (Opzionale, resetta a grigio scuro se serve) */
+@media (prefers-color-scheme: dark) {
+  /* Se vuoi supportare la dark mode, scommenta e modifica qui. 
+     Per ora forziamo il look chiaro Soft UI che hai chiesto. */
+  /* :root { --background: #2d2d2d; } */
 }

@@ -5,35 +5,40 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI ---
+// --- CONFIGURAZIONE PACCHI (Con Colori) ---
 const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
-    colorClasses: 'bg-stone-200 border-stone-500 text-stone-800', 
-    img: '/ui/box-standard.png'
+    img: '/ui/box-standard.png',
+    // Colori specifici per questo pacco (Testo scuro per leggibilità su grigio)
+    textColor: 'text-stone-600',
+    accentColor: 'text-stone-500'
   },
   { 
     id: 'advanced', 
     name: 'Gold', 
     cost: 50, 
-    colorClasses: 'bg-yellow-300 border-yellow-600 text-yellow-900', 
-    img: '/ui/box-gold.png'
+    img: '/ui/box-gold.png',
+    textColor: 'text-yellow-700', // Oro scuro
+    accentColor: 'text-yellow-600'
   },
   { 
     id: 'elite', 
     name: 'Diamond', 
     cost: 200, 
-    colorClasses: 'bg-cyan-300 border-cyan-600 text-cyan-900', 
-    img: '/ui/box-diamond.png'
+    img: '/ui/box-diamond.png',
+    textColor: 'text-cyan-700', // Ciano scuro
+    accentColor: 'text-cyan-600'
   },
   { 
     id: 'god', 
     name: 'Godly', 
     cost: 1000, 
-    colorClasses: 'bg-purple-400 border-purple-700 text-purple-950', 
-    img: '/ui/box-god.png'
+    img: '/ui/box-god.png',
+    textColor: 'text-purple-800', // Viola scuro
+    accentColor: 'text-purple-600'
   },
 ];
 
@@ -125,18 +130,17 @@ export default function HomeScreen({
     }
   };
 
-  const start = () => {
-    if (busy || isRevealing) return;
-    setBusy(true);
-    setLastCat(null);
-    setTaps(0);
-    setStage("charging");
-    vibrate(10);
-  };
-
   const tap = () => {
     if (isRevealing) return;
-    if (stage === "idle") { start(); return; }
+    if (stage === "idle") { 
+        if (busy || isRevealing) return;
+        setBusy(true);
+        setLastCat(null);
+        setTaps(0);
+        setStage("charging");
+        vibrate(10);
+        return; 
+    }
     if (stage !== "charging") return;
     setTaps((t) => Math.min(tapsNeeded, t + 1));
     vibrate(6);
@@ -163,20 +167,17 @@ export default function HomeScreen({
     (async () => {
       if (stage !== "charging" || taps < tapsNeeded) return;
       
-      // INIZIO FLASH
       setStage("opening");
       setIsRevealing(true);
-      vibrate(30);
+      vibrate(40);
 
       try {
-        // MODIFICA: Lanciamo la chiamata al server E il timer da 0.5s INSIEME.
-        // Risultato: Il flash dura esattamente 0.5s (se la rete è veloce), poi mostra subito il gatto.
         await Promise.all([
             doOpenPack(),
-            new Promise((r) => setTimeout(r, 500)) 
+            new Promise((r) => setTimeout(r, 200)) 
         ]);
-        
         setStage("reveal");
+        setIsRevealing(false);
         vibrate(50);
       } catch (e) {
         setStage("idle");
@@ -187,91 +188,101 @@ export default function HomeScreen({
     })();
   }, [taps, stage]);
 
-  if (loading) return <div className="h-full flex items-center justify-center font-black">Caricamento...</div>;
+  if (loading) return <div className="h-full flex items-center justify-center font-black text-gray-400">Caricamento...</div>;
 
   return (
-    <div className="h-full w-full overflow-hidden relative text-black flex flex-col bg-[#FFD700]/10">
+    <div className="h-full w-full overflow-hidden relative flex flex-col bg-[#e0e0e0]">
       
-      {/* FLASH OVERLAY (Bianco che copre tutto) */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
              exit={{ opacity: 0 }}
+             transition={{ duration: 0.2 }}
              className="fixed inset-0 z-40 pointer-events-none"
-             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 80%)" }}
+             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 80%)" }}
           />
         )}
       </AnimatePresence>
 
-      {/* HEADER FLOTTANTE */}
+      {/* HEADER */}
       <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20">
-         <div className="flex-1 h-14 bg-yellow-100 border-b-4 border-yellow-500 rounded-2xl flex items-center px-4 gap-3 shadow-md">
-            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain drop-shadow-sm" />
-            <span className="font-black text-2xl text-yellow-900 pt-1">{credits}</span>
+         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3">
+            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain opacity-80" />
+            <span className="font-black text-2xl pt-1 text-gray-600">{credits}</span>
          </div>
-         <div className="flex items-center gap-2">
-             <button onClick={claimDaily} disabled={busy || isRevealing} className="h-14 w-14 bg-green-200 border-b-4 border-green-600 rounded-2xl flex items-center justify-center active:border-b-0 active:translate-y-1 transition shadow-md">
-                <span className="text-2xl drop-shadow-sm">🎁</span>
+
+         <div className="flex items-center gap-4">
+             <button 
+                onClick={claimDaily} 
+                disabled={busy || isRevealing} 
+                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl"
+             >
+                🎁
              </button>
-             <div className="h-14 w-14 bg-stone-100 border-b-4 border-stone-400 rounded-2xl flex items-center justify-center font-black text-sm text-stone-600 shadow-md">
+             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-gray-500">
                 {initials}
              </div>
          </div>
       </div>
 
-      {/* BODY CENTRALE */}
+      {/* CENTRO */}
       <div className="flex-grow relative w-full flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
           
-          {/* FASE 1: RULLO SELEZIONE */}
+          {/* FASE 1: CAROSELLO */}
           {!selectedPackId ? (
             <motion.div 
               key="carousel"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.5 }}
+              exit={{ opacity: 0, scale: 1.2 }}
               className="w-full flex flex-col items-center justify-center pb-10"
             >
-              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-xl" />
+              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-md opacity-80 mix-blend-multiply" />
 
-              {/* CILINDRO */}
               <div className="relative w-full max-w-sm h-64 flex items-center justify-center perspective-500">
-                <button onClick={prevPack} className="absolute left-4 z-30 p-3 bg-white hover:bg-gray-100 rounded-xl border-b-4 border-black/10 active:border-b-0 active:translate-y-1 transition text-xl">◀</button>
-
-                {/* Cards Laterali */}
+                <button onClick={prevPack} className="absolute left-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-400 text-lg hover:text-gray-600">◀</button>
+                
                 <motion.div className="absolute left-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -30, rotateY: -25 }}>
-                   <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32 drop-shadow-lg" />
+                   <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32 drop-shadow-xl" />
                 </motion.div>
                 <motion.div className="absolute right-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: 30, rotateY: 25 }}>
-                   <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-32 drop-shadow-lg" />
+                   <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-32 drop-shadow-xl" />
                 </motion.div>
-
-                {/* Card ATTIVA */}
+                
                 <motion.div
                   key={activeIndex}
                   initial={{ scale: 0.8, y: 20, opacity: 0 }}
                   animate={{ scale: 1.3, y: 0, opacity: 1, rotateY: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="z-20 relative drop-shadow-2xl"
                 >
                   <img src={activePack.img} className="w-40 object-contain" />
                 </motion.div>
 
-                <button onClick={nextPack} className="absolute right-4 z-30 p-3 bg-white hover:bg-gray-100 rounded-xl border-b-4 border-black/10 active:border-b-0 active:translate-y-1 transition text-xl">▶</button>
+                <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-400 text-lg hover:text-gray-600">▶</button>
               </div>
 
-              {/* BOX INFO */}
-              <div className="mt-6 flex flex-col items-center gap-4 w-full px-8">
-                 <div className={`border-b-8 rounded-3xl p-6 w-full max-w-xs text-center shadow-xl transition-colors duration-300 ${activePack.colorClasses}`}>
-                     <div className="text-3xl font-black uppercase tracking-tighter drop-shadow-sm">{activePack.name}</div>
-                     <div className="mt-3 inline-flex items-center gap-2 bg-black/10 px-4 py-1.5 rounded-xl font-black text-xl border-2 border-black/5">
-                        <img src="/ui/coin.png" className="w-5 h-5" />
-                        <span>{activePack.cost}</span>
+              {/* INFO BOX (Soft UI con TESTO COLORATO) */}
+              <div className="mt-8 flex flex-col items-center gap-6 w-full px-8">
+                 
+                 <div className="soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3">
+                     {/* Titolo Colorato in base alla rarità */}
+                     <div className={`text-2xl font-black uppercase tracking-widest ${activePack.textColor}`}>
+                        {activePack.name}
+                     </div>
+                     <div className="soft-ui-sm px-5 py-2 flex items-center gap-2">
+                        <img src="/ui/coin.png" className="w-4 h-4 opacity-70" />
+                        <span className={`font-bold text-lg ${activePack.accentColor}`}>{activePack.cost}</span>
                      </div>
                  </div>
-                 <button onClick={selectCurrentPack} className="w-full max-w-xs bg-black text-white border-b-8 border-gray-800 active:border-b-0 active:translate-y-2 rounded-2xl py-4 font-black text-2xl uppercase tracking-widest shadow-xl transition-all">
+
+                 {/* Tasto SCEGLI con testo colorato */}
+                 <button 
+                    onClick={selectCurrentPack} 
+                    className={`w-full max-w-xs soft-ui soft-btn py-4 font-black text-xl uppercase tracking-[0.2em] ${activePack.textColor}`}
+                 >
                     SCEGLI
                  </button>
               </div>
@@ -282,12 +293,16 @@ export default function HomeScreen({
             /* FASE 2: APERTURA */
             <motion.div 
               key="opening"
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               className="h-full w-full flex flex-col items-center justify-center pb-20"
             >
-              <button onClick={() => setSelectedPackId(null)} disabled={busy} className="absolute top-4 left-4 bg-white border-b-4 border-stone-300 active:border-b-0 active:translate-y-1 px-4 py-2 rounded-xl font-black text-xs z-30 flex items-center gap-2 shadow-sm uppercase tracking-wide">
+              <button 
+                onClick={() => setSelectedPackId(null)} 
+                disabled={busy} 
+                className="absolute top-4 left-4 soft-ui-sm soft-btn px-4 py-2 font-black text-xs z-30 uppercase tracking-wide text-gray-500 flex items-center gap-2"
+              >
                 ◀ Indietro
               </button>
 
@@ -295,14 +310,11 @@ export default function HomeScreen({
                 <PackArt state={stage} onTap={tap} shakeTrigger={taps} customImage={openingPack?.img} />
               </div>
               
-              <div className="mt-16 h-12 flex flex-col items-center justify-center text-center">
+              <div className="mt-16 text-center">
                 {stage === "idle" && openingPack && (
-                    <>
-                      <div className="text-3xl font-black uppercase tracking-tighter mb-2">{openingPack.name}</div>
-                      <div className="text-sm font-bold bg-white/50 px-3 py-1 rounded-lg animate-pulse border-2 border-black/5">
-                        TOCCA RIPETUTAMENTE
-                      </div>
-                    </>
+                    <div className={`text-sm font-bold animate-pulse tracking-widest ${openingPack.textColor}`}>
+                        TOCCA PER APRIRE
+                    </div>
                 )}
               </div>
             </motion.div>
@@ -314,7 +326,7 @@ export default function HomeScreen({
       <AnimatePresence>
           {stage === "reveal" && lastCat && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black/40 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -324,8 +336,8 @@ export default function HomeScreen({
               animate={{ scale: 1, y: 0 }}
               className="flex flex-col items-center w-full max-w-sm"
             >
-               <div className="relative mb-6">
-                 <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full scale-110 z-0"></div>
+               <div className="relative mb-8">
+                 <div className="absolute inset-0 bg-white/40 blur-3xl rounded-full scale-110 z-0"></div>
                  <motion.img
                   src={lastCat.image_url}
                   className="relative z-10 w-64 h-64 object-contain drop-shadow-2xl animate-float"
@@ -334,17 +346,17 @@ export default function HomeScreen({
                 />
             </div>
 
-              <div className="bg-white border-b-8 border-stone-300 rounded-3xl p-6 w-full text-center relative z-20 shadow-2xl">
-                  <div className="text-3xl font-black mb-1 text-black">{lastCat.name}</div>
-                  <div className={`text-sm font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border-2 border-current inline-block px-3 py-1 rounded-lg mb-6`}>
+              <div className="soft-ui p-8 w-full text-center relative z-20">
+                  <div className="text-3xl font-black mb-2 text-gray-800">{lastCat.name}</div>
+                  <div className={`text-xs font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-8 opacity-70`}>
                     {lastCat.rarity}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={fullReset} className="py-3 font-bold text-gray-500 hover:text-black border-2 border-transparent hover:border-gray-200 rounded-xl transition">
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={fullReset} className="py-3 font-bold text-gray-400 hover:text-gray-600 transition">
                       ESCI
                     </button>
-                    <button onClick={softReset} className="bg-yellow-400 border-b-4 border-yellow-600 text-yellow-900 rounded-xl font-black active:border-b-0 active:translate-y-1 transition shadow-lg">
+                    <button onClick={softReset} className="soft-ui soft-btn py-3 font-black text-gray-700 text-sm tracking-wide">
                       DI NUOVO
                     </button>
                   </div>
@@ -355,6 +367,7 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
+        /* ... animazioni varie ... */
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
         .perspective-500 { perspective: 500px; }
