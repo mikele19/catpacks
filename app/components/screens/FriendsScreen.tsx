@@ -19,7 +19,7 @@ export default function FriendsScreen() {
     if (!user) return;
     setMyId(user.id);
 
-    // 1. Prendi gli ID degli amici
+    // 1. TROVA GLI AMICI
     const { data: relations } = await supabase
       .from("user_friends")
       .select("friend_id")
@@ -28,13 +28,27 @@ export default function FriendsScreen() {
     const friendIds = relations?.map(r => r.friend_id) || [];
 
     if (friendIds.length > 0) {
-      // 2. Prendi i dettagli (email, livello) degli amici
+      // 2. SCARICA I PROFILI
       const { data: profiles } = await supabase
         .from("users_profile")
         .select("user_id, email, level, xp")
         .in("user_id", friendIds);
+
+      // 3. CONTA I GATTI PER OGNI AMICO
+      // Usiamo Promise.all per fare le richieste in parallelo (veloce)
+      const friendsWithData = await Promise.all((profiles || []).map(async (friend) => {
+          const { count } = await supabase
+              .from("user_cats")
+              .select("*", { count: 'exact', head: true }) // head: true significa "conta solo, non scaricare dati"
+              .eq("user_id", friend.user_id);
+          
+          return {
+              ...friend,
+              cat_count: count || 0
+          };
+      }));
       
-      setFriends(profiles || []);
+      setFriends(friendsWithData);
     }
     setLoading(false);
   };
@@ -49,16 +63,9 @@ export default function FriendsScreen() {
     if (!input) return;
     setAdding(true);
 
-    // --- MODIFICA FONDAMENTALE (REGEX) ---
-    // Cerchiamo un UUID (formato: 8-4-4-4-12 caratteri esadecimali) dentro la stringa incollata.
-    // Questo funziona con link, spazi, testo attorno, ecc.
+    // REGEX: Estrae il codice UUID ovunque si trovi nella stringa
     const uuidMatch = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    
-    // Se troviamo un UUID valido usiamo quello, altrimenti proviamo a pulire l'input
     const cleanId = uuidMatch ? uuidMatch[0] : input.trim();
-    
-    console.log("Tentativo aggiunta amico:", cleanId);
-    // -------------------------------------
     
     // Recupera token
     const { data } = await supabase.auth.getSession();
@@ -79,10 +86,8 @@ export default function FriendsScreen() {
     if (json.success) {
       alert("Amico aggiunto con successo!");
       setInputCode("");
-      loadFriends(); 
+      loadFriends(); // Ricarica la lista per vedere il nuovo amico
     } else {
-      // Se dice ancora "Utente non trovato", verifica che l'amico esista davvero nel DB
-      // Se dice "Violates row level security", devi applicare la SOLUZIONE BACKEND (passo precedente)
       alert("Errore: " + json.error);
     }
   };
@@ -141,15 +146,20 @@ export default function FriendsScreen() {
             <div className="space-y-3">
                 {friends.map((f) => (
                     <div key={f.user_id} className="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-gray-100 flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-black text-sm">
-                            {f.level || 1}
+                        {/* LIVELLO (Cerchio Colorato) */}
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex flex-col items-center justify-center text-white shadow-md border-2 border-white">
+                            <span className="text-[8px] font-bold uppercase opacity-80 leading-none">LVL</span>
+                            <span className="text-lg font-black leading-none">{f.level || 1}</span>
                         </div>
+                        
+                        {/* INFO UTENTE */}
                         <div className="flex-1 min-w-0">
-                            <div className="font-bold truncate text-sm">
-                                {f.email || `Giocatore ${f.user_id.slice(0,6)}`}
+                            <div className="font-black truncate text-base text-gray-800">
+                                {f.email ? f.email.split('@')[0] : `Giocatore ${f.user_id.slice(0,4)}`}
                             </div>
-                            <div className="text-[10px] font-bold text-gray-400 uppercase">
-                                {f.xp || 0} XP
+                            <div className="flex gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                                <span className="bg-gray-100 px-2 py-0.5 rounded-md">XP {f.xp || 0}</span>
+                                <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-md">🐱 {f.cat_count} Gatti</span>
                             </div>
                         </div>
                     </div>
