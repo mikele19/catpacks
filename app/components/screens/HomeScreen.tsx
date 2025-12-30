@@ -8,40 +8,20 @@ import PackArt from "../PackArt";
 // --- CONFIGURAZIONE PACCHI (COLORI VIVACI) ---
 const PACKS = [
   { 
-    id: 'basic', 
-    name: 'Standard', 
-    cost: 10, 
-    img: '/ui/box-standard.png',
-    bgColor: 'bg-stone-100', 
-    textColor: 'text-stone-600',
-    pillColor: 'bg-stone-200'
+    id: 'basic', name: 'Standard', cost: 10, img: '/ui/box-standard.png',
+    bgColor: 'bg-stone-100', textColor: 'text-stone-600', pillColor: 'bg-stone-200'
   },
   { 
-    id: 'advanced', 
-    name: 'Gold', 
-    cost: 50, 
-    img: '/ui/box-gold.png',
-    bgColor: 'bg-yellow-400', 
-    textColor: 'text-yellow-900',
-    pillColor: 'bg-yellow-500/30'
+    id: 'advanced', name: 'Gold', cost: 50, img: '/ui/box-gold.png',
+    bgColor: 'bg-yellow-400', textColor: 'text-yellow-900', pillColor: 'bg-yellow-500/30'
   },
   { 
-    id: 'elite', 
-    name: 'Diamond', 
-    cost: 200, 
-    img: '/ui/box-diamond.png',
-    bgColor: 'bg-cyan-400', 
-    textColor: 'text-cyan-900',
-    pillColor: 'bg-cyan-500/30'
+    id: 'elite', name: 'Diamond', cost: 200, img: '/ui/box-diamond.png',
+    bgColor: 'bg-cyan-400', textColor: 'text-cyan-900', pillColor: 'bg-cyan-500/30'
   },
   { 
-    id: 'god', 
-    name: 'Godly', 
-    cost: 1000, 
-    img: '/ui/box-god.png',
-    bgColor: 'bg-purple-500', 
-    textColor: 'text-white',
-    pillColor: 'bg-purple-700/30'
+    id: 'god', name: 'Godly', cost: 1000, img: '/ui/box-god.png',
+    bgColor: 'bg-purple-500', textColor: 'text-white', pillColor: 'bg-purple-700/30'
   },
 ];
 
@@ -77,6 +57,9 @@ export default function HomeScreen({
   const [stage, setStage] = useState<"idle" | "charging" | "opening" | "reveal">("idle");
   const [taps, setTaps] = useState(0);
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
+  
+  // NUOVO: Stato per l'XP guadagnata
+  const [lastXp, setLastXp] = useState(0);
 
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
   const activePack = PACKS[activeIndex];
@@ -122,10 +105,11 @@ export default function HomeScreen({
       if (!contentType?.includes("application/json")) throw new Error("Errore Server");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Errore sconosciuto");
+      
       setCredits(json.credits);
       setLastCat(json.cat);
-      const img = new Image();
-      if (json.cat?.image_url) img.src = json.cat.image_url;
+      setLastXp(json.xpGained || 0); // Salviamo l'XP guadagnata
+      
     } catch (err: any) {
       console.error(err);
       alert("ERRORE: " + err.message);
@@ -156,6 +140,7 @@ export default function HomeScreen({
     setLastCat(null);
     setBusy(false);
     setSelectedPackId(null);
+    setLastXp(0);
   };
 
   const softReset = () => {
@@ -164,6 +149,7 @@ export default function HomeScreen({
     setTaps(0);
     setLastCat(null);
     setBusy(false);
+    setLastXp(0);
   };
 
   useEffect(() => {
@@ -192,16 +178,13 @@ export default function HomeScreen({
   if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    // 1. SFONDO BASE (Gradiente Giallo/Arancio) + RAGGIERA CSS
     <div className="h-full w-full overflow-hidden relative flex flex-col"
          style={{
            background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)"
          }}>
       
-      {/* Raggiera che ruota (CSS puro) */}
       <div className="absolute inset-[-50%] w-[200%] h-[200%] opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
 
-      {/* FLASH OVERLAY */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
@@ -215,176 +198,102 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* --- HEADER COMPATTO (h-10) --- */}
       <div className="pt-4 px-3 flex items-center justify-between gap-2 w-full max-w-md mx-auto z-20 relative">
-         
-         {/* Monete Compatte */}
          <div className="h-10 soft-ui-sm flex items-center px-4 gap-2 bg-white/90 backdrop-blur-sm shrink-0">
             <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
             <span className="font-black text-lg pt-0.5 text-yellow-900">{credits}</span>
          </div>
-
-         {/* Bottoni Destra Compatti (h-10 w-10) */}
          <div className="flex items-center gap-2">
-             <button 
-                onClick={claimDaily} 
-                disabled={busy || isRevealing} 
-                className="h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-xl bg-white/90 backdrop-blur-sm"
-             >
-                🎁
-             </button>
-             <div className="h-10 w-10 soft-ui-sm flex items-center justify-center font-black text-xs text-yellow-900 bg-white/90 backdrop-blur-sm">
-                {initials}
-             </div>
+             <button onClick={claimDaily} disabled={busy || isRevealing} className="h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-xl bg-white/90 backdrop-blur-sm">🎁</button>
+             <div className="h-10 w-10 soft-ui-sm flex items-center justify-center font-black text-xs text-yellow-900 bg-white/90 backdrop-blur-sm">{initials}</div>
          </div>
       </div>
 
-      {/* CENTRO (Layout Ottimizzato) */}
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10 pb-16">
         <AnimatePresence mode="wait">
-          
-          {/* FASE 1: CAROSELLO */}
           {!selectedPackId ? (
-            <motion.div 
-              key="carousel"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.2 }}
-              className="w-full flex flex-col items-center justify-center"
-            >
+            <motion.div key="carousel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.2 }} className="w-full flex flex-col items-center justify-center">
               <img src="/ui/logo.png" alt="Logo" className="w-48 mb-4 drop-shadow-xl" />
-
               <div className="relative w-full max-w-sm h-56 flex items-center justify-center perspective-500">
-                {/* Frecce Piccole (h-10 w-10) */}
                 <button onClick={prevPack} className="absolute left-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
-                
                 <motion.div className="absolute left-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -25, rotateY: -25 }}>
                    <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-28 drop-shadow-xl" />
                 </motion.div>
                 <motion.div className="absolute right-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: 25, rotateY: 25 }}>
                    <img src={PACKS[(activeIndex + 1) % PACKS.length].img} className="w-28 drop-shadow-xl" />
                 </motion.div>
-                
-                <motion.div
-                  key={activeIndex}
-                  initial={{ scale: 0.8, y: 20, opacity: 0 }}
-                  animate={{ scale: 1.3, y: 0, opacity: 1, rotateY: 0 }}
-                  className="z-20 relative drop-shadow-2xl"
-                >
+                <motion.div key={activeIndex} initial={{ scale: 0.8, y: 20, opacity: 0 }} animate={{ scale: 1.3, y: 0, opacity: 1, rotateY: 0 }} className="z-20 relative drop-shadow-2xl">
                   <img src={activePack.img} className="w-36 object-contain" />
                 </motion.div>
-
                 <button onClick={nextPack} className="absolute right-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
-
-              {/* INFO BOX COMPATTO */}
               <div className="mt-2 flex flex-col items-center gap-4 w-full px-6">
-                 
                  <div className={`soft-ui px-6 py-4 w-full max-w-[240px] text-center flex flex-col items-center gap-2 ${activePack.bgColor}`}>
-                     <div className={`text-xl font-black uppercase tracking-widest ${activePack.textColor}`}>
-                        {activePack.name}
-                     </div>
+                     <div className={`text-xl font-black uppercase tracking-widest ${activePack.textColor}`}>{activePack.name}</div>
                      <div className={`soft-ui-sm px-4 py-1.5 flex items-center gap-1.5 ${activePack.pillColor}`}>
                         <img src="/ui/coin.png" className="w-4 h-4" />
                         <span className={`font-bold text-base ${activePack.textColor}`}>{activePack.cost}</span>
                      </div>
                  </div>
-
-                 <button 
-                    onClick={selectCurrentPack} 
-                    className="w-full max-w-[240px] soft-ui soft-btn py-3 font-black text-lg uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
-                 >
-                    SCEGLI
-                 </button>
+                 <button onClick={selectCurrentPack} className="w-full max-w-[240px] soft-ui soft-btn py-3 font-black text-lg uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg">SCEGLI</button>
               </div>
-
             </motion.div>
           ) : (
-            
-            /* FASE 2: APERTURA (Tasto Indietro Piccolo) */
-            <motion.div 
-              key="opening"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full w-full flex flex-col items-center justify-center pb-20"
-            >
-              <button 
-                onClick={() => setSelectedPackId(null)} 
-                disabled={busy} 
-                className="absolute top-4 left-4 soft-ui-sm soft-btn px-3 py-1.5 font-black text-[10px] z-30 uppercase tracking-wide text-gray-600 bg-white/90 flex items-center gap-1"
-              >
-                ◀ Indietro
-              </button>
-
+            <motion.div key="opening" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="h-full w-full flex flex-col items-center justify-center pb-20">
+              <button onClick={() => setSelectedPackId(null)} disabled={busy} className="absolute top-4 left-4 soft-ui-sm soft-btn px-3 py-1.5 font-black text-[10px] z-30 uppercase tracking-wide text-gray-600 bg-white/90 flex items-center gap-1">◀ Indietro</button>
               <div className="relative pack-shadow scale-125">
                 <PackArt state={stage} onTap={tap} shakeTrigger={taps} customImage={openingPack?.img} />
               </div>
-              
               <div className="mt-16 text-center">
-                {stage === "idle" && openingPack && (
-                    <div className="text-sm font-bold animate-pulse tracking-widest text-white drop-shadow-md">
-                        TOCCA PER APRIRE
-                    </div>
-                )}
+                {stage === "idle" && openingPack && (<div className="text-sm font-bold animate-pulse tracking-widest text-white drop-shadow-md">TOCCA PER APRIRE</div>)}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* MODALE DEL GATTO */}
       <AnimatePresence>
           {stage === "reveal" && lastCat && (
           <motion.div
             className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black/60 backdrop-blur-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           >
-            <motion.div
-              initial={{ scale: 0.5, y: 100 }}
-              animate={{ scale: 1, y: 0 }}
-              className="flex flex-col items-center w-full max-w-sm"
-            >
+            <motion.div initial={{ scale: 0.5, y: 100 }} animate={{ scale: 1, y: 0 }} className="flex flex-col items-center w-full max-w-sm">
+               
+               {/* IMMAGINE + BADGE XP */}
                <div className="relative mb-6">
                  <div className="absolute inset-0 bg-white/30 blur-3xl rounded-full scale-110 z-0"></div>
-                 <motion.img
-                  src={lastCat.image_url}
-                  className="relative z-10 w-56 h-56 object-contain drop-shadow-2xl animate-float"
-                  initial={{ rotate: -5 }}
-                  animate={{ rotate: 0, transition: {duration: 0.5} }}
-                />
-            </div>
+                 
+                 {/* BADGE XP (Novità) */}
+                 <motion.div 
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                    className="absolute -top-2 -right-2 bg-green-500 text-white font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform rotate-12"
+                 >
+                    +{lastXp} XP
+                 </motion.div>
+
+                 <motion.img src={lastCat.image_url} className="relative z-10 w-56 h-56 object-contain drop-shadow-2xl animate-float" initial={{ rotate: -5 }} animate={{ rotate: 0, transition: {duration: 0.5} }} />
+              </div>
 
               <div className="soft-ui p-6 w-full text-center relative z-20 bg-white">
                   <div className="text-2xl font-black mb-1 text-gray-800">{lastCat.name}</div>
-                  <div className={`text-[10px] font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-6 opacity-70`}>
-                    {lastCat.rarity}
-                  </div>
-                  
+                  <div className={`text-[10px] font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-6 opacity-70`}>{lastCat.rarity}</div>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={fullReset} className="py-2.5 font-bold text-gray-400 hover:text-gray-600 transition text-sm">
-                      ESCI
-                    </button>
-                    <button onClick={softReset} className="soft-ui soft-btn py-2.5 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">
-                      DI NUOVO
-                    </button>
+                    <button onClick={fullReset} className="py-2.5 font-bold text-gray-400 hover:text-gray-600 transition text-sm">ESCI</button>
+                    <button onClick={softReset} className="soft-ui soft-btn py-2.5 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">DI NUOVO</button>
                   </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-      
       <style jsx global>{`
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        /* Animazione lenta (40s) per non disturbare */
         .animate-spin-slow { animation: spin-slow 40s linear infinite; }
-        
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
-        
         .perspective-500 { perspective: 500px; }
         .rarity-common { color: #6b7280; }
         .rarity-rare { color: #3b82f6; }
