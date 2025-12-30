@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+// --- CONFIGURAZIONE ---
 const PACK_TIERS: Record<string, { cost: number, rates: any }> = {
   'basic': { cost: 10, rates: { common: 70, rare: 25, epic: 4, legendary: 0.9, mythic: 0.1 } },
   'advanced': { cost: 50, rates: { common: 40, rare: 45, epic: 12, legendary: 2.5, mythic: 0.5 } },
@@ -46,20 +47,21 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Login scaduto" }, { status: 401 });
 
-  // 1. Dati Utente
-  const { data: profile } = await supabase
-    .from("users_profile")
-    .select("credits, xp, level")
-    .eq("user_id", user.id)
-    .single();
-  
+  const wonRarity = pickRarity(packType);
+
+  // --- OTTIMIZZAZIONE 1: FETCH PARALLELO ---
+  // Scarichiamo Profilo e Catalogo Gatti CONTEMPORANEAMENTE (risparmia ~300ms)
+  const [profileRes, catsRes] = await Promise.all([
+    supabase.from("users_profile").select("credits, xp, level").eq("user_id", user.id).single(),
+    supabase.from("cats_catalog").select("*").eq("rarity", wonRarity)
+  ]);
+
+  const profile = profileRes.data;
+  const catsPool = catsRes.data;
+
   if (!profile || profile.credits < COST) {
     return NextResponse.json({ error: `Ti servono ${COST} monete!` }, { status: 400 });
   }
-
-  // 2. Estrazione Gatto
-  const wonRarity = pickRarity(packType);
-  const { data: catsPool } = await supabase.from("cats_catalog").select("*").eq("rarity", wonRarity);
 
   let finalCat;
   if (!catsPool || catsPool.length === 0) {
@@ -71,17 +73,16 @@ export async function POST(req: Request) {
 
   if (!finalCat) return NextResponse.json({ error: "Errore catalogo" }, { status: 500 });
 
-  // --- CONTROLLO "NUOVO" ---
-  // Contiamo quanti ne ha già di questo tipo
+  // --- OTTIMIZZAZIONE 2: CONTROLLO "NUOVO" VELOCE ---
   const { count } = await supabase
     .from("user_cats")
     .select("*", { count: 'exact', head: true })
     .eq("user_id", user.id)
     .eq("cat_id", finalCat.id);
 
-  const isNew = count === 0; // Se è 0, è nuovo!
+  const isNew = count === 0;
 
-  // 3. Calcolo XP e Livello
+  // Calcolo XP
   const xpGained = XP_TABLE[wonRarity] || 10;
   let currentXp = (profile.xp || 0) + xpGained;
   let currentLevel = profile.level || 1;
@@ -93,20 +94,24 @@ export async function POST(req: Request) {
     xpNeeded = currentLevel * 100;
   }
 
-  // 4. Aggiornamento DB
-  await supabase.from("users_profile").update({ 
-    credits: profile.credits - COST,
-    xp: currentXp,
-    level: currentLevel
-  }).eq("user_id", user.id);
-
-  await supabase.from("user_cats").insert({ user_id: user.id, cat_id: finalCat.id });
+  // --- OTTIMIZZAZIONE 3: SCRITTURA PARALLELA ---
+  // Aggiorniamo il profilo e inseriamo il gatto CONTEMPORANEAMENTE (risparmia ~300ms)
+  await Promise.all([
+    supabase.from("users_profile").update({ 
+      credits: profile.credits - COST,
+      xp: currentXp,
+      level: currentLevel
+    }).eq("user_id", user.id),
+    
+    supabase.from("user_cats").insert({ user_id: user.id, cat_id: finalCat.id })
+  ]);
 
   return NextResponse.json({
     success: true,
     credits: profile.credits - COST,
     cat: finalCat,
     xpGained,
-    isNew // <--- Mandiamo questa info al frontend
+    isNew,
+    newLevel: currentLevel
   });
 }

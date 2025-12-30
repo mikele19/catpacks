@@ -58,9 +58,8 @@ export default function HomeScreen({
   const [taps, setTaps] = useState(0);
   const [lastCat, setLastCat] = useState<CatResult | null>(null);
   
-  // STATI PER I BADGE
   const [lastXp, setLastXp] = useState(0);
-  const [isNewCat, setIsNewCat] = useState(false); // <--- NUOVO STATO
+  const [isNewCat, setIsNewCat] = useState(false);
 
   const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
   const activePack = PACKS[activeIndex];
@@ -99,6 +98,7 @@ export default function HomeScreen({
     try {
       if (!openingPack) throw new Error("Nessun pacco selezionato");
       const headers = await getAuthHeader();
+      // Chiamata API ottimizzata
       const res = await fetch("/api/open-pack", { 
         method: "POST", headers, body: JSON.stringify({ packId: openingPack.id }) 
       });
@@ -110,7 +110,7 @@ export default function HomeScreen({
       setCredits(json.credits);
       setLastCat(json.cat);
       setLastXp(json.xpGained || 0);
-      setIsNewCat(json.isNew || false); // <--- SALVIAMO SE È NUOVO
+      setIsNewCat(json.isNew || false);
       
     } catch (err: any) {
       console.error(err);
@@ -143,7 +143,7 @@ export default function HomeScreen({
     setBusy(false);
     setSelectedPackId(null);
     setLastXp(0);
-    setIsNewCat(false); // RESET
+    setIsNewCat(false);
   };
 
   const softReset = () => {
@@ -153,9 +153,10 @@ export default function HomeScreen({
     setLastCat(null);
     setBusy(false);
     setLastXp(0);
-    setIsNewCat(false); // RESET
+    setIsNewCat(false);
   };
 
+  // --- LOGICA DI APERTURA OTTIMIZZATA ---
   useEffect(() => {
     (async () => {
       if (stage !== "charging" || taps < tapsNeeded) return;
@@ -163,10 +164,13 @@ export default function HomeScreen({
       setIsRevealing(true);
       vibrate(40);
       try {
-        await Promise.all([
-            doOpenPack(),
-            new Promise((r) => setTimeout(r, 200)) 
-        ]);
+        // RIMOSSO IL TIMEOUT ARTIFICIALE DI 200ms
+        // Ora attendiamo solo la risposta del server (che è stata velocizzata)
+        await doOpenPack();
+        
+        // Piccolissimo delay (50ms) solo per garantire che il browser renderizzi il flash bianco
+        await new Promise(r => setTimeout(r, 50)); 
+        
         setStage("reveal");
         setIsRevealing(false);
         vibrate(50);
@@ -194,10 +198,10 @@ export default function HomeScreen({
           <motion.div
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
-             exit={{ opacity: 0 }}
-             transition={{ duration: 0.2 }}
+             exit={{ opacity: 0, transition: { duration: 0.2 } }} // Uscita rapida
+             transition={{ duration: 0.1 }} // Entrata rapida
              className="fixed inset-0 z-40 pointer-events-none"
-             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 80%)" }}
+             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 80%)" }}
           />
         )}
       </AnimatePresence>
@@ -267,22 +271,20 @@ export default function HomeScreen({
                <div className="relative mb-6">
                  <div className="absolute inset-0 bg-white/30 blur-3xl rounded-full scale-110 z-0"></div>
                  
-                 {/* BADGE XP */}
                  <motion.div 
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring" }}
+                    transition={{ delay: 0.1, type: "spring" }} // Delay ridotto
                     className="absolute -top-2 -right-2 bg-green-500 text-white font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform rotate-12"
                  >
                     +{lastXp} XP
                  </motion.div>
 
-                 {/* BADGE "NEW!" (NUOVO!) */}
                  {isNewCat && (
                     <motion.div 
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.4, type: "spring" }}
+                        transition={{ delay: 0.2, type: "spring" }} // Delay ridotto
                         className="absolute -top-2 left-0 bg-yellow-400 text-yellow-900 font-black text-sm px-3 py-1 rounded-full shadow-lg border-2 border-white z-30 transform -rotate-12"
                     >
                         NEW!
