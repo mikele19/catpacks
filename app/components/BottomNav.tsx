@@ -2,11 +2,10 @@
 
 import type { TabKey } from "./SwipeTabs";
 
-// AGGIUNTO IL TAB FRIENDS (👥)
 const tabs: { label: string; key: TabKey; icon: string }[] = [
   { label: "Home", key: "home", icon: "🏠" },
   { label: "Collezione", key: "collection", icon: "🃏" },
-  { label: "Amici", key: "friends", icon: "👥" }, // <--- NUOVO
+  { label: "Amici", key: "friends", icon: "👥" },
   { label: "Profilo", key: "profile", icon: "👤" },
 ];
 
@@ -20,14 +19,15 @@ export default function BottomNav({
  {
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4"
+      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6"
       onTouchStart={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      
-      <div className="mx-auto max-w-md sticker bg-white/90 backdrop-blur-md shadow-2xl">
-        {/* Cambiato grid-cols-3 in grid-cols-4 per farci stare il 4° bottone */}
-        <div className="grid grid-cols-4">
+      {/* QUI ERA L'ERRORE: Ho rimesso 'soft-ui' al posto di 'sticker' */}
+      <div className="mx-auto max-w-md soft-ui bg-white/90 backdrop-blur-md shadow-2xl rounded-[40px] px-2 h-20 flex items-center">
+        
+        {/* Griglia a 4 colonne per i 4 tasti */}
+        <div className="grid grid-cols-4 w-full">
           {tabs.map((t) => {
             const active = tab === t.key;
 
@@ -35,21 +35,18 @@ export default function BottomNav({
               <button
                 key={t.key}
                 onClick={() => onTabChange(t.key)}
-                className="relative py-3 active:scale-[0.95] transition-transform"
+                className="relative py-3 active:scale-[0.95] transition-transform flex flex-col items-center justify-center gap-1"
               >
-                <div className="flex flex-col items-center gap-1">
-                  
-                  <div className={`text-2xl leading-none transition-all ${active ? "scale-110 blur-none" : "opacity-40 grayscale scale-100"}`}>
-                    {t.icon}
-                  </div>
+                <div className={`text-2xl leading-none transition-all duration-300 ${active ? "scale-110 -translate-y-1 grayscale-0" : "opacity-40 grayscale scale-100"}`}>
+                  {t.icon}
+                </div>
 
-                  <div className={`text-[10px] font-black tracking-wide ${active ? "text-black" : "text-black/40"}`}>
-                    {t.label}
-                  </div>
+                <div className={`text-[10px] font-black tracking-widest uppercase transition-colors duration-300 ${active ? "text-gray-900" : "text-gray-400"}`}>
+                  {t.label}
                 </div>
 
                 {active && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 h-[3px] w-6 rounded-full bg-black" />
+                  <div className="absolute bottom-0 h-[3px] w-5 rounded-full bg-gray-900" />
                 )}
               </button>
             );

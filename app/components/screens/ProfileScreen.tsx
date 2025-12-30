@@ -3,13 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-// Aggiungiamo isActive alle props
+// Ora accettiamo 'isActive' per sapere quando ricaricare i dati
 export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
   const [profile, setProfile] = useState<any>(null);
   const [catCount, setCatCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Spostiamo la logica di caricamento in una funzione riutilizzabile
+  // Funzione che scarica i dati dal database
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if(!user) return;
@@ -37,7 +37,7 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
     loadData();
   }, [loadData]);
 
-  // Carica OGNI VOLTA che la tab diventa attiva
+  // Carica OGNI VOLTA che clicchi sul tasto Profilo (isActive diventa true)
   useEffect(() => {
     if (isActive) {
       loadData();
@@ -49,7 +49,7 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
     window.location.reload();
   };
 
-  if (loading && !profile) return <div className="h-full flex items-center justify-center font-black">Caricamento...</div>;
+  if (loading && !profile) return <div className="h-full flex items-center justify-center font-black text-black/50">Caricamento...</div>;
 
   // Calcoli per la barra livello
   const currentLevel = profile?.level || 1;
@@ -61,22 +61,23 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
     <div className="h-full w-full overflow-hidden text-black overflow-y-auto">
       <div className="px-5 pt-10 pb-32 max-w-md mx-auto">
         
-        <h1 className="text-4xl font-black tracking-tight drop-shadow-sm mb-6">Profilo</h1>
+        <h1 className="text-4xl font-black tracking-tight drop-shadow-sm mb-6 text-center">Profilo</h1>
         
-        <div className="sticker bg-white/90 p-6 shadow-sm rounded-3xl backdrop-blur-sm mb-4 relative overflow-hidden">
+        {/* CARD PROFILO (Uso 'soft-ui' per coerenza) */}
+        <div className="soft-ui bg-white/90 p-6 mb-6 relative overflow-hidden">
             {/* Decorazione sfondo */}
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-yellow-300 rounded-full blur-2xl opacity-40"></div>
 
             <div className="relative z-10">
-                <div className="text-xl font-black mb-1">{profile?.email?.split('@')[0]}</div>
-                <div className="text-sm font-bold text-black/50 mb-6">Giocatore</div>
+                <div className="text-xl font-black mb-1 truncate">{profile?.email?.split('@')[0]}</div>
+                <div className="text-sm font-bold text-black/50 mb-6 uppercase tracking-widest">Giocatore</div>
                 
                 <div className="flex gap-4 text-center">
-                    <div className="flex-1 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div className="flex-1 bg-gray-50 rounded-2xl p-3 border border-gray-200">
                         <div className="text-3xl font-black text-yellow-500">{currentLevel}</div>
                         <div className="text-[10px] font-black uppercase text-black/40 tracking-widest">Livello</div>
                     </div>
-                    <div className="flex-1 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                    <div className="flex-1 bg-gray-50 rounded-2xl p-3 border border-gray-200">
                         <div className="text-3xl font-black text-cyan-500">{catCount}</div>
                         <div className="text-[10px] font-black uppercase text-black/40 tracking-widest">Gatti</div>
                     </div>
@@ -88,7 +89,7 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
                         <span>XP {currentXp}</span>
                         <span>{xpNeeded} XP</span>
                     </div>
-                    <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden border border-gray-200">
+                    <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                         <div 
                             className="h-full bg-green-500 rounded-full transition-all duration-500 shadow-sm" 
                             style={{ width: `${progressPercent}%` }}
@@ -101,11 +102,12 @@ export default function ProfileScreen({ isActive }: { isActive?: boolean }) {
             </div>
         </div>
 
-        <div className="sticker bg-white/80 p-6 shadow-sm rounded-3xl backdrop-blur-sm flex items-center justify-between">
+        {/* LOGOUT */}
+        <div className="soft-ui bg-white/80 p-6 flex items-center justify-between">
             <div className="font-black text-lg">Sessione</div>
             <button 
                 onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white font-black text-sm uppercase tracking-wider px-5 py-2 rounded-xl shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition border-2 border-black"
+                className="bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
             >
                 Logout
             </button>
