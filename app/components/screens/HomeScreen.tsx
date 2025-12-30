@@ -5,13 +5,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI (COLORI PIENI) ---
+// --- CONFIGURAZIONE PACCHI (COLORI VIVACI) ---
 const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
     img: '/ui/box-standard.png',
+    // Colori per la card "Gommosa"
     bgColor: 'bg-stone-100', 
     textColor: 'text-stone-600',
     pillColor: 'bg-stone-200'
@@ -194,13 +195,14 @@ export default function HomeScreen({
   if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    <div className="h-full w-full overflow-hidden relative flex flex-col bg-stone-900"> {/* Colore base scuro di fallback */}
+    // 1. SFONDO BASE (Gradiente Giallo/Arancio)
+    <div className="h-full w-full overflow-hidden relative flex flex-col"
+         style={{
+           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)"
+         }}>
       
-      {/* --- SFONDO PERSONALIZZATO CHE GIRA (bg.png) --- */}
-      {/* Usiamo un div gigante centrato per evitare bordi tagliati durante la rotazione */}
-      <div 
-          className="absolute top-1/2 left-1/2 w-[250vmax] h-[250vmax] -translate-x-1/2 -translate-y-1/2 bg-[url('/ui/bg.png')] bg-cover bg-center animate-spin-slow pointer-events-none z-0"
-      ></div>
+      {/* 2. RAGGIERA DI LUCE ROTANTE (CSS Generato) */}
+      <div className="absolute inset-[-50%] w-[200%] h-[200%] opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
 
       {/* FLASH OVERLAY */}
       <AnimatePresence>
@@ -216,29 +218,31 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* HEADER (Z-INDEX alto per stare sopra lo sfondo) */}
+      {/* HEADER */}
       <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20 relative">
          
-         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3 bg-white/90">
+         {/* Monete */}
+         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3 bg-white/90 backdrop-blur-sm">
             <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
             <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
          </div>
 
+         {/* Bottoni Destra */}
          <div className="flex items-center gap-4">
              <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
-                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl bg-white/90"
+                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl bg-white/90 backdrop-blur-sm"
              >
                 🎁
              </button>
-             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-yellow-900 bg-white/90">
+             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-yellow-900 bg-white/90 backdrop-blur-sm">
                 {initials}
              </div>
          </div>
       </div>
 
-      {/* CENTRO (Z-INDEX alto per stare sopra lo sfondo) */}
+      {/* CENTRO */}
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10">
         <AnimatePresence mode="wait">
           
@@ -275,7 +279,7 @@ export default function HomeScreen({
                 <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
 
-              {/* INFO BOX */}
+              {/* INFO BOX (CARD COLORATA INTERA!) */}
               <div className="mt-8 flex flex-col items-center gap-6 w-full px-8">
                  
                  <div className={`soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3 ${activePack.bgColor}`}>
@@ -379,8 +383,9 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-        @keyframes spin-slow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 60s linear infinite; }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Rallentata leggermente a 40s per renderla più piacevole */
+        .animate-spin-slow { animation: spin-slow 40s linear infinite; }
         
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }

@@ -18,16 +18,21 @@ export default function BottomNav({
 })
  {
   return (
-    // Aggiungo onTouchStart e onMouseDown con stopPropagation.
-    // Questo impedisce allo "Swipe" di rubare il click sui bottoni.
+    // Container esterno fisso
     <div 
-      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4"
+      className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6"
       onTouchStart={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       
-      <div className="mx-auto max-w-md sticker bg-white/90 backdrop-blur-md shadow-2xl">
-        <div className="grid grid-cols-3">
+      {/* MODIFICA QUI:
+         - Tolto 'sticker'
+         - Aggiunto 'soft-ui' per bordi e ombre 3D
+         - Aggiunto 'bg-white/90' per l'effetto materiale
+         - Aggiunto 'backdrop-blur-md' per l'effetto vetro
+      */}
+      <div className="mx-auto max-w-md soft-ui bg-white/90 backdrop-blur-md flex items-center justify-around h-20 px-2 rounded-[40px]">
+        
           {tabs.map((t) => {
             const active = tab === t.key;
 
@@ -35,28 +40,26 @@ export default function BottomNav({
               <button
                 key={t.key}
                 onClick={() => onTabChange(t.key)}
-                className="relative py-3 active:scale-[0.95] transition-transform"
+                className="relative w-full h-full flex flex-col items-center justify-center gap-1 active:scale-90 transition-transform duration-200"
               >
-                <div className="flex flex-col items-center gap-1">
-                  
-                  {/* Emoji al posto dell'immagine */}
-                  <div className={`text-2xl leading-none transition-all ${active ? "scale-110 blur-none" : "opacity-40 grayscale scale-100"}`}>
-                    {t.icon}
-                  </div>
-
-                  <div className={`text-[11px] font-black tracking-wide ${active ? "text-black" : "text-black/40"}`}>
-                    {t.label}
-                  </div>
+                
+                {/* Icona */}
+                <div className={`text-2xl leading-none transition-all duration-300 ${active ? "scale-110 -translate-y-1 grayscale-0" : "opacity-40 grayscale scale-100"}`}>
+                  {t.icon}
                 </div>
 
-                {/* Indicatore attivo */}
+                {/* Testo */}
+                <div className={`text-[10px] font-black tracking-widest uppercase transition-colors duration-300 ${active ? "text-gray-800" : "text-gray-400"}`}>
+                  {t.label}
+                </div>
+
+                {/* Indicatore Attivo (Pillola sotto) */}
                 {active && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 h-[3px] w-8 rounded-full bg-black" />
+                  <div className="absolute bottom-2 w-1.5 h-1.5 bg-gray-800 rounded-full" />
                 )}
               </button>
             );
           })}
-        </div>
       </div>
     </div>
   );
