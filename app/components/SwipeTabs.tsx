@@ -5,7 +5,6 @@ import React, { ReactNode, useEffect, useState } from "react";
 
 export type TabKey = "home" | "collection" | "friends" | "profile";
 
-// L'ordine deve corrispondere a quello in AppShell
 const order: TabKey[] = ["home", "collection", "friends", "profile"];
 
 export default function SwipeTabs({
@@ -29,30 +28,27 @@ export default function SwipeTabs({
   }, [currentIndex]);
 
   const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+    enter: (dir: number) => ({
+      x: dir > 0 ? 300 : -300,
+      opacity: 0,
+      zIndex: 0, // Entra dietro
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      zIndex: 10, // La pagina attiva sta DAVANTI
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? -300 : 300,
+      opacity: 0,
+      zIndex: 0, // Esce dietro
+    }),
   };
 
-  // USA React.Children.toArray per sicurezza
   const childrenArray = React.Children.toArray(children);
   const pageContent = childrenArray[currentIndex];
 
-  if (!pageContent) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-4 text-center">
-        <div className="bg-white/90 p-6 rounded-2xl shadow-xl">
-          <h2 className="text-xl font-black text-red-500 mb-2">Errore Navigazione</h2>
-          <p className="text-sm font-bold text-gray-600">
-             Impossibile trovare la pagina: <span className="uppercase">{tab}</span>
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-             Controlla che FriendsScreen sia importato in AppShell.tsx
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!pageContent) return null;
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -65,7 +61,7 @@ export default function SwipeTabs({
           animate="center"
           exit="exit"
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="w-full h-full absolute inset-0"
+          className="w-full h-full absolute inset-0 bg-transparent" // bg-transparent per sicurezza
         >
           {pageContent}
         </motion.div>
