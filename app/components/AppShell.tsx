@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient"; 
 import SwipeTabs, { TabKey } from "@/app/components/SwipeTabs";
 import BottomNav from "@/app/components/BottomNav";
+
+// IMPORTA TUTTE LE SCHERMATE
 import HomeScreen from "@/app/components/screens/HomeScreen";
 import CollectionScreen from "@/app/components/screens/CollectionScreen";
+import FriendsScreen from "@/app/components/screens/FriendsScreen"; // Assicurati che il percorso sia giusto
 import ProfileScreen from "@/app/components/screens/ProfileScreen";
 import LoginScreen from "@/app/components/screens/LoginScreen";
-import FriendsScreen from "@/app/components/screens/FriendsScreen"; // <--- IMPORTA
 
 export default function AppShell() {
   const [session, setSession] = useState<any>(null);
@@ -52,6 +54,8 @@ export default function AppShell() {
       style={{ backgroundImage: "url('/ui/bg.png')" }}
     >
       <SwipeTabs tab={tab} onTabChange={setTab}>
+        
+        {/* PAGINA 1: HOME */}
         <HomeScreen
           key="home"
           credits={credits}
@@ -59,19 +63,22 @@ export default function AppShell() {
           onRedeem={handleRedeem}
         />
 
+        {/* PAGINA 2: COLLEZIONE */}
         <CollectionScreen 
            key="collection" 
            isActive={tab === "collection"} 
            setCredits={setCredits}
         />
 
-        {/* --- NUOVA PAGINA AMICI --- */}
+        {/* PAGINA 3: AMICI (NUOVA!) */}
         <FriendsScreen key="friends" />
         
+        {/* PAGINA 4: PROFILO */}
         <ProfileScreen 
            key="profile" 
            isActive={tab === "profile"} 
         />
+
       </SwipeTabs>
 
       <BottomNav tab={tab} onTabChange={setTab} />

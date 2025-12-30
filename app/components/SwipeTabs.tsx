@@ -3,10 +3,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import React, { ReactNode, useEffect, useState } from "react";
 
-// AGGIUNTO "friends"
+// Definiamo le chiavi possibili
 export type TabKey = "home" | "collection" | "friends" | "profile";
 
-// ORDINE ESATTO DELLE TABS (Deve corrispondere ai figli in AppShell)
+// ORDINE ESATTO: Deve coincidere con l'AppShell!
 const order: TabKey[] = ["home", "collection", "friends", "profile"];
 
 export default function SwipeTabs({
@@ -18,36 +18,33 @@ export default function SwipeTabs({
   onTabChange: (t: TabKey) => void;
   children: ReactNode[];
 }) {
-  // Trova l'indice della tab attiva (es: home=0, collection=1, friends=2, profile=3)
   const currentIndex = order.indexOf(tab);
   
-  // Stato per la direzione dello swipe
   const [direction, setDirection] = useState(0);
   const [prevIndex, setPrevIndex] = useState(currentIndex);
 
   useEffect(() => {
-    if (currentIndex > prevIndex) {
-      setDirection(1); // Vai a destra
-    } else if (currentIndex < prevIndex) {
-      setDirection(-1); // Vai a sinistra
-    }
+    if (currentIndex > prevIndex) setDirection(1);
+    else if (currentIndex < prevIndex) setDirection(-1);
     setPrevIndex(currentIndex);
   }, [currentIndex]);
 
   const variants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (dir: number) => ({
-      x: dir > 0 ? -300 : 300,
-      opacity: 0,
-    }),
+    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
   };
+
+  // PROTEZIONE: Se la pagina non esiste, evita che tutto diventi bianco
+  const pageContent = children[currentIndex];
+
+  if (!pageContent) {
+    return (
+      <div className="h-full flex items-center justify-center font-bold text-red-500 bg-white/80 m-4 rounded-xl">
+        Errore: Pagina "{tab}" non trovata o indice errato.
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -62,8 +59,7 @@ export default function SwipeTabs({
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="w-full h-full absolute inset-0"
         >
-          {/* Mostra il figlio corrispondente all'indice */}
-          {children[currentIndex]}
+          {pageContent}
         </motion.div>
       </AnimatePresence>
     </div>
