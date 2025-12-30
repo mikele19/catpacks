@@ -5,40 +5,47 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt from "../PackArt";
 
-// --- CONFIGURAZIONE PACCHI (Con Colori) ---
+// --- CONFIGURAZIONE PACCHI (COLORI PIENI) ---
 const PACKS = [
   { 
     id: 'basic', 
     name: 'Standard', 
     cost: 10, 
     img: '/ui/box-standard.png',
-    // Colori specifici per questo pacco (Testo scuro per leggibilità su grigio)
+    // Colori pieni per la card
+    bgColor: 'bg-stone-100', 
     textColor: 'text-stone-600',
-    accentColor: 'text-stone-500'
+    pillColor: 'bg-stone-200'
   },
   { 
     id: 'advanced', 
     name: 'Gold', 
     cost: 50, 
     img: '/ui/box-gold.png',
-    textColor: 'text-yellow-700', // Oro scuro
-    accentColor: 'text-yellow-600'
+    // Giallo intenso
+    bgColor: 'bg-yellow-400', 
+    textColor: 'text-yellow-900',
+    pillColor: 'bg-yellow-500/30' // Pillola semi-trasparente
   },
   { 
     id: 'elite', 
     name: 'Diamond', 
     cost: 200, 
     img: '/ui/box-diamond.png',
-    textColor: 'text-cyan-700', // Ciano scuro
-    accentColor: 'text-cyan-600'
+    // Ciano intenso
+    bgColor: 'bg-cyan-400', 
+    textColor: 'text-cyan-900',
+    pillColor: 'bg-cyan-500/30'
   },
   { 
     id: 'god', 
     name: 'Godly', 
     cost: 1000, 
     img: '/ui/box-god.png',
-    textColor: 'text-purple-800', // Viola scuro
-    accentColor: 'text-purple-600'
+    // Viola intenso
+    bgColor: 'bg-purple-500', 
+    textColor: 'text-white', // Testo bianco sul viola scuro
+    pillColor: 'bg-purple-700/30'
   },
 ];
 
@@ -188,11 +195,19 @@ export default function HomeScreen({
     })();
   }, [taps, stage]);
 
-  if (loading) return <div className="h-full flex items-center justify-center font-black text-gray-400">Caricamento...</div>;
+  if (loading) return <div className="h-full flex items-center justify-center font-black text-white">Caricamento...</div>;
 
   return (
-    <div className="h-full w-full overflow-hidden relative flex flex-col bg-[#e0e0e0]">
+    // SFONDO SUNBURST (GIALLO RAGGIERA)
+    <div className="h-full w-full overflow-hidden relative flex flex-col"
+         style={{
+           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)" // Gradiente Giallo Oro -> Arancio
+         }}>
       
+      {/* Texture Raggiera (Opzionale, effetto luce) */}
+      <div className="absolute inset-0 opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
+
+      {/* FLASH OVERLAY */}
       <AnimatePresence>
         {isRevealing && (
           <motion.div
@@ -208,27 +223,29 @@ export default function HomeScreen({
 
       {/* HEADER */}
       <div className="pt-6 px-4 flex items-start justify-between gap-3 w-full max-w-md mx-auto z-20">
-         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3">
-            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain opacity-80" />
-            <span className="font-black text-2xl pt-1 text-gray-600">{credits}</span>
+         
+         {/* Monete: Sfondo bianco semi-trasparente per staccare dal giallo */}
+         <div className="flex-1 h-14 soft-ui-sm flex items-center px-4 gap-3 bg-white/90">
+            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
+            <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
          </div>
 
          <div className="flex items-center gap-4">
              <button 
                 onClick={claimDaily} 
                 disabled={busy || isRevealing} 
-                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl"
+                className="h-14 w-14 soft-ui-sm soft-btn flex items-center justify-center text-2xl bg-white/90"
              >
                 🎁
              </button>
-             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-gray-500">
+             <div className="h-14 w-14 soft-ui-sm flex items-center justify-center font-black text-sm text-yellow-900 bg-white/90">
                 {initials}
              </div>
          </div>
       </div>
 
       {/* CENTRO */}
-      <div className="flex-grow relative w-full flex flex-col items-center justify-center">
+      <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10">
         <AnimatePresence mode="wait">
           
           {/* FASE 1: CAROSELLO */}
@@ -240,10 +257,10 @@ export default function HomeScreen({
               exit={{ opacity: 0, scale: 1.2 }}
               className="w-full flex flex-col items-center justify-center pb-10"
             >
-              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-md opacity-80 mix-blend-multiply" />
+              <img src="/ui/logo.png" alt="Logo" className="w-60 mb-8 drop-shadow-xl" />
 
               <div className="relative w-full max-w-sm h-64 flex items-center justify-center perspective-500">
-                <button onClick={prevPack} className="absolute left-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-400 text-lg hover:text-gray-600">◀</button>
+                <button onClick={prevPack} className="absolute left-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
                 
                 <motion.div className="absolute left-8 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -30, rotateY: -25 }}>
                    <img src={PACKS[(activeIndex - 1 + PACKS.length) % PACKS.length].img} className="w-32 drop-shadow-xl" />
@@ -261,27 +278,31 @@ export default function HomeScreen({
                   <img src={activePack.img} className="w-40 object-contain" />
                 </motion.div>
 
-                <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-400 text-lg hover:text-gray-600">▶</button>
+                <button onClick={nextPack} className="absolute right-4 z-30 h-12 w-12 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
 
-              {/* INFO BOX (Soft UI con TESTO COLORATO) */}
+              {/* INFO BOX (CARD COLORATA INTERA!) */}
               <div className="mt-8 flex flex-col items-center gap-6 w-full px-8">
                  
-                 <div className="soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3">
-                     {/* Titolo Colorato in base alla rarità */}
+                 {/* Qui usiamo bgColor per colorare TUTTA la card (es: Giallo Pieno) */}
+                 <div className={`soft-ui px-8 py-6 w-full max-w-xs text-center flex flex-col items-center gap-3 ${activePack.bgColor}`}>
+                     
                      <div className={`text-2xl font-black uppercase tracking-widest ${activePack.textColor}`}>
                         {activePack.name}
                      </div>
-                     <div className="soft-ui-sm px-5 py-2 flex items-center gap-2">
-                        <img src="/ui/coin.png" className="w-4 h-4 opacity-70" />
-                        <span className={`font-bold text-lg ${activePack.accentColor}`}>{activePack.cost}</span>
+                     
+                     {/* Pillola Prezzo (leggermente più scura/chiara dello sfondo) */}
+                     <div className={`soft-ui-sm px-5 py-2 flex items-center gap-2 ${activePack.pillColor}`}>
+                        <img src="/ui/coin.png" className="w-4 h-4" />
+                        <span className={`font-bold text-lg ${activePack.textColor}`}>{activePack.cost}</span>
                      </div>
+
                  </div>
 
-                 {/* Tasto SCEGLI con testo colorato */}
+                 {/* Tasto SCEGLI (Anche questo segue il colore o nero) */}
                  <button 
                     onClick={selectCurrentPack} 
-                    className={`w-full max-w-xs soft-ui soft-btn py-4 font-black text-xl uppercase tracking-[0.2em] ${activePack.textColor}`}
+                    className="w-full max-w-xs soft-ui soft-btn py-4 font-black text-xl uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg"
                  >
                     SCEGLI
                  </button>
@@ -301,7 +322,7 @@ export default function HomeScreen({
               <button 
                 onClick={() => setSelectedPackId(null)} 
                 disabled={busy} 
-                className="absolute top-4 left-4 soft-ui-sm soft-btn px-4 py-2 font-black text-xs z-30 uppercase tracking-wide text-gray-500 flex items-center gap-2"
+                className="absolute top-4 left-4 soft-ui-sm soft-btn px-4 py-2 font-black text-xs z-30 uppercase tracking-wide text-gray-600 bg-white/90 flex items-center gap-2"
               >
                 ◀ Indietro
               </button>
@@ -312,7 +333,7 @@ export default function HomeScreen({
               
               <div className="mt-16 text-center">
                 {stage === "idle" && openingPack && (
-                    <div className={`text-sm font-bold animate-pulse tracking-widest ${openingPack.textColor}`}>
+                    <div className="text-sm font-bold animate-pulse tracking-widest text-white drop-shadow-md">
                         TOCCA PER APRIRE
                     </div>
                 )}
@@ -326,7 +347,7 @@ export default function HomeScreen({
       <AnimatePresence>
           {stage === "reveal" && lastCat && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black/40 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black/60 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -337,7 +358,7 @@ export default function HomeScreen({
               className="flex flex-col items-center w-full max-w-sm"
             >
                <div className="relative mb-8">
-                 <div className="absolute inset-0 bg-white/40 blur-3xl rounded-full scale-110 z-0"></div>
+                 <div className="absolute inset-0 bg-white/30 blur-3xl rounded-full scale-110 z-0"></div>
                  <motion.img
                   src={lastCat.image_url}
                   className="relative z-10 w-64 h-64 object-contain drop-shadow-2xl animate-float"
@@ -346,7 +367,7 @@ export default function HomeScreen({
                 />
             </div>
 
-              <div className="soft-ui p-8 w-full text-center relative z-20">
+              <div className="soft-ui p-8 w-full text-center relative z-20 bg-white">
                   <div className="text-3xl font-black mb-2 text-gray-800">{lastCat.name}</div>
                   <div className={`text-xs font-black tracking-[0.3em] uppercase rarity-${lastCat.rarity} border border-current inline-block px-3 py-1 rounded-full mb-8 opacity-70`}>
                     {lastCat.rarity}
@@ -356,7 +377,7 @@ export default function HomeScreen({
                     <button onClick={fullReset} className="py-3 font-bold text-gray-400 hover:text-gray-600 transition">
                       ESCI
                     </button>
-                    <button onClick={softReset} className="soft-ui soft-btn py-3 font-black text-gray-700 text-sm tracking-wide">
+                    <button onClick={softReset} className="soft-ui soft-btn py-3 font-black text-gray-700 text-sm tracking-wide bg-yellow-400">
                       DI NUOVO
                     </button>
                   </div>
@@ -367,9 +388,12 @@ export default function HomeScreen({
       </AnimatePresence>
       
       <style jsx global>{`
-        /* ... animazioni varie ... */
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        
         .perspective-500 { perspective: 500px; }
         .rarity-common { color: #6b7280; }
         .rarity-rare { color: #3b82f6; }
