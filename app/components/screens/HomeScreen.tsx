@@ -87,11 +87,10 @@ export default function HomeScreen({
     setLoading(false);
   };
 
-  // --- LOGICA TIMER GIORNALIERO ---
+  // --- LOGICA TIMER GIORNALIERO (Con Secondi) ---
   useEffect(() => { 
     loadProfile(); 
 
-    // Controllo timer locale per l'interfaccia
     const checkTimer = () => {
         const lastRedeem = localStorage.getItem("lastDailyRedeem");
         if (lastRedeem) {
@@ -101,9 +100,17 @@ export default function HomeScreen({
             if (diff < oneDay) {
                 setCanRedeem(false);
                 const remaining = oneDay - diff;
+                
                 const hours = Math.floor(remaining / (1000 * 60 * 60));
                 const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                setTimeLeft(`${hours}h ${minutes}m`);
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                
+                // Formatta con lo zero davanti (es: 04:05:09)
+                const h = hours.toString().padStart(2, '0');
+                const m = minutes.toString().padStart(2, '0');
+                const s = seconds.toString().padStart(2, '0');
+                
+                setTimeLeft(`${h}:${m}:${s}`);
             } else {
                 setCanRedeem(true);
                 setTimeLeft("");
@@ -112,7 +119,7 @@ export default function HomeScreen({
     };
     
     checkTimer();
-    const interval = setInterval(checkTimer, 60000); // Aggiorna ogni minuto
+    const interval = setInterval(checkTimer, 1000); // Aggiorna ogni secondo
     return () => clearInterval(interval);
   }, []);
 
@@ -128,7 +135,6 @@ export default function HomeScreen({
         setCredits(json.credits); 
         vibrate(20);
         
-        // Salva timestamp locale per il countdown
         localStorage.setItem("lastDailyRedeem", Date.now().toString());
         setCanRedeem(false);
         alert("Hai ricevuto 20 monete!");
@@ -237,41 +243,32 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* --- HEADER: Solo Monete --- */}
-      <div className="pt-4 px-3 flex items-center justify-center w-full max-w-md mx-auto z-20 relative">
-         <div className="h-12 soft-ui-sm flex items-center px-6 gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-md">
-            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
+      {/* --- HEADER COMPATTO: MONETE + REGALO --- */}
+      <div className="pt-4 px-4 w-full max-w-md mx-auto z-20 relative flex items-center justify-center gap-3">
+         
+         {/* BOX MONETE */}
+         <div className="h-12 soft-ui-sm flex items-center px-5 gap-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm flex-1 justify-center">
+            <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
             <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
          </div>
-      </div>
 
-      {/* --- NUOVO TASTO REGALO GIORNALIERO --- */}
-      <div className="px-6 mt-4 w-full max-w-md mx-auto z-20 relative">
-        <button
+         {/* BOX REGALO (Piccolo e a fianco) */}
+         <button
             onClick={claimDaily}
             disabled={!canRedeem || busy || isRevealing}
-            className={`w-full relative group overflow-hidden rounded-2xl p-1 transition-all active:scale-95 shadow-lg border-b-4 border-black/10
+            className={`h-12 soft-ui-sm px-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 flex-1
                 ${canRedeem 
-                    ? "bg-gradient-to-r from-green-400 to-emerald-500 hover:brightness-110" 
-                    : "bg-gray-200 cursor-not-allowed grayscale opacity-80"
+                    ? "bg-white/90 text-yellow-900 border-b-4 border-yellow-200" 
+                    : "bg-black/10 text-black/40 border-b-4 border-transparent"
                 }
             `}
-        >
-            <div className={`rounded-xl px-4 py-3 flex items-center gap-4 ${canRedeem ? "bg-white/10" : "bg-transparent"}`}>
-                <div className="text-3xl bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm backdrop-blur-md">
-                    🎁
-                </div>
-                <div className="flex-1 text-left">
-                    <div className={`text-[10px] font-black uppercase tracking-wider mb-0.5 ${canRedeem ? "text-green-50" : "text-gray-500"}`}>
-                        {canRedeem ? "Regalo Giornaliero" : "Torna tra"}
-                    </div>
-                    <div className={`text-lg font-black leading-none ${canRedeem ? "text-white" : "text-gray-600"}`}>
-                        {canRedeem ? "RISCATTA 20 MONETE" : timeLeft}
-                    </div>
-                </div>
-                {canRedeem && <div className="text-white text-xl animate-pulse">👉</div>}
-            </div>
-        </button>
+         >
+            <span className="text-xl">🎁</span>
+            <span className="font-black text-xs uppercase pt-0.5 tracking-wide">
+                {canRedeem ? "RISCATTA" : timeLeft}
+            </span>
+         </button>
+
       </div>
 
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10 pb-16">
