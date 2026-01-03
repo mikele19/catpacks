@@ -136,7 +136,6 @@ export default function HomeScreen({
         
         localStorage.setItem("lastDailyRedeem", Date.now().toString());
         setCanRedeem(false);
-        // RIMOSSO L'ALERT QUI
     } catch(e: any) {
         alert(e.message);
     } finally { 
@@ -291,16 +290,23 @@ export default function HomeScreen({
                 </motion.div>
                 <button onClick={nextPack} className="absolute right-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">▶</button>
               </div>
+
+              {/* BOX INFO PACCHETTO MODIFICATO */}
               <div className="mt-2 flex flex-col items-center gap-4 w-full px-6">
-                 <div className={`soft-ui px-6 py-4 w-full max-w-[240px] text-center flex flex-col items-center gap-2 ${activePack.bgColor}`}>
-                     <div className={`text-xl font-black uppercase tracking-widest ${activePack.textColor}`}>{activePack.name}</div>
-                     <div className={`soft-ui-sm px-4 py-1.5 flex items-center gap-1.5 ${activePack.pillColor}`}>
-                        <img src="/ui/coin.png" className="w-4 h-4" />
-                        <span className={`font-bold text-base ${activePack.textColor}`}>{activePack.cost}</span>
+                 <div className={`soft-ui px-6 py-4 w-full max-w-[240px] text-center flex flex-col items-center justify-center ${activePack.bgColor}`}>
+                     {/* Nome Pacchetto */}
+                     <div className={`text-xl font-black uppercase tracking-widest ${activePack.textColor} mb-1`}>
+                        {activePack.name}
+                     </div>
+                     {/* Prezzo e Moneta INTEGRATI (Nessun box extra) */}
+                     <div className="flex items-center gap-2 opacity-80">
+                        <img src="/ui/coin.png" className="w-5 h-5 drop-shadow-sm" />
+                        <span className={`font-black text-xl ${activePack.textColor}`}>{activePack.cost}</span>
                      </div>
                  </div>
                  <button onClick={selectCurrentPack} className="w-full max-w-[240px] soft-ui soft-btn py-3 font-black text-lg uppercase tracking-[0.2em] bg-black text-white border-2 border-white/20 shadow-lg">SCEGLI</button>
               </div>
+
             </motion.div>
           ) : (
             <motion.div key="opening" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="h-full w-full flex flex-col items-center justify-center pb-20">
