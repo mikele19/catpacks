@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom"; // <--- IMPORTANTE
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -11,6 +12,9 @@ export default function FriendsScreen() {
   const [inputCode, setInputCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  
+  // Serve per il Portal (teletrasporto popup)
+  const [mounted, setMounted] = useState(false);
 
   // --- STATI COLLEZIONE ---
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
@@ -25,6 +29,7 @@ export default function FriendsScreen() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMounted(true); // Siamo nel browser, possiamo usare i Portal
     loadFriends();
   }, []);
 
@@ -165,6 +170,7 @@ export default function FriendsScreen() {
   };
 
   return (
+    <>
     <div className="h-full w-full overflow-y-auto text-black pb-32">
       <div className="px-5 pt-8 max-w-md mx-auto">
         <h1 className="text-4xl font-black mb-4 text-center drop-shadow-sm">Amici</h1>
@@ -206,106 +212,94 @@ export default function FriendsScreen() {
             </div>
         )}
       </div>
-
-      {/* --- POPUP COLLEZIONE --- */}
-      <AnimatePresence>
-        {selectedFriend && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => setSelectedFriend(null)}>
-                <motion.div initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 50 }} className="bg-white w-full max-w-sm max-h-[80vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                    <div className="text-center mb-4"><h3 className="text-xl font-black truncate">{selectedFriend.email?.split('@')[0]}</h3><p className="text-xs font-bold text-gray-400 uppercase">Collezione</p></div>
-                    <button onClick={() => setSelectedFriend(null)} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500 transition-colors">✕</button>
-                    
-                    <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2 mb-4">
-                        {loadingCats ? <div className="text-center py-10 font-bold text-gray-400">...</div> : 
-                         friendCats.length === 0 ? <div className="text-center py-10 font-bold text-gray-400">Vuoto</div> : (
-                            <div className="grid grid-cols-3 gap-2">
-                                {friendCats.map((cat) => (
-                                    <div key={cat.id} className="aspect-square bg-white rounded-xl p-1 shadow-sm border border-gray-100 relative">
-                                        <img src={cat.image_url} className="w-full h-full object-contain" />
-                                        {cat.count > 1 && <div className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">x{cat.count}</div>}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    <button onClick={removeFriend} disabled={removing} className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-2xl hover:bg-red-100 active:scale-95 transition-all border-2 border-transparent hover:border-red-200">{removing ? "..." : "🗑️ Rimuovi Amico"}</button>
-                </motion.div>
-            </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* --- POPUP CHAT (STILE BOX) --- */}
-      <AnimatePresence>
-        {chatFriend && (
-            <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
-                className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" 
-                onClick={() => setChatFriend(null)}
-            >
-                {/* BOX CHAT: Stesso stile del box collezione */}
-                <motion.div 
-                    initial={{ scale: 0.8, y: 50 }} 
-                    animate={{ scale: 1, y: 0 }} 
-                    exit={{ scale: 0.8, y: 50 }} 
-                    className="bg-white w-full max-w-sm h-[80vh] rounded-[40px] relative flex flex-col shadow-2xl overflow-hidden" 
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* HEADER */}
-                    <div className="bg-white px-4 py-4 border-b border-gray-100 z-10 text-center relative shrink-0">
-                        <div className="font-black text-xl leading-none truncate px-8">{chatFriend.email?.split('@')[0]}</div>
-                        <div className="text-xs font-bold text-green-500 uppercase tracking-wide">Online</div>
-                        
-                        {/* Tasto X per chiudere */}
-                        <button 
-                            onClick={() => setChatFriend(null)} 
-                            className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500 transition-colors"
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    {/* LISTA MESSAGGI */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f0f2f5]">
-                        {messages.length === 0 && (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                <div className="text-4xl mb-2">👋</div>
-                                <div className="text-xs font-bold">Saluta il tuo amico!</div>
-                            </div>
-                        )}
-                        
-                        {messages.map((msg) => {
-                            const isMe = msg.sender_id === myId;
-                            return (
-                                <div key={msg.id} className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm break-words ${isMe ? "bg-black text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-200"}`}>
-                                        {msg.content}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* INPUT CHAT */}
-                    <div className="p-3 bg-white border-t border-gray-200 shrink-0">
-                        <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
-                            <input 
-                                value={newMessage} 
-                                onChange={(e) => setNewMessage(e.target.value)} 
-                                placeholder="Scrivi..." 
-                                className="flex-1 bg-gray-100 rounded-full px-5 py-3 font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition"
-                            />
-                            <button type="submit" disabled={!newMessage.trim()} className="w-11 h-11 bg-blue-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg active:scale-90 transition disabled:opacity-50 disabled:scale-100">
-                                ➤
-                            </button>
-                        </form>
-                    </div>
-                </motion.div>
-            </motion.div>
-        )}
-      </AnimatePresence>
     </div>
+
+      {/* --- POPUP TELETRASPORTATI SU BODY (Coprono BottomNav) --- */}
+      {mounted && createPortal(
+        <>
+            {/* POPUP COLLEZIONE */}
+            <AnimatePresence>
+                {selectedFriend && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => setSelectedFriend(null)}>
+                        <motion.div initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 50 }} className="bg-white w-full max-w-sm max-h-[80vh] rounded-[40px] p-6 relative flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                            <div className="text-center mb-4"><h3 className="text-xl font-black truncate">{selectedFriend.email?.split('@')[0]}</h3><p className="text-xs font-bold text-gray-400 uppercase">Collezione</p></div>
+                            <button onClick={() => setSelectedFriend(null)} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full font-bold text-gray-500">✕</button>
+                            
+                            <div className="flex-1 overflow-y-auto no-scrollbar soft-ui-inner bg-gray-50 rounded-2xl p-2 mb-4">
+                                {loadingCats ? <div className="text-center py-10 font-bold text-gray-400">...</div> : 
+                                friendCats.length === 0 ? <div className="text-center py-10 font-bold text-gray-400">Vuoto</div> : (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {friendCats.map((cat) => (
+                                            <div key={cat.id} className="aspect-square bg-white rounded-xl p-1 shadow-sm border border-gray-100 relative">
+                                                <img src={cat.image_url} className="w-full h-full object-contain" />
+                                                {cat.count > 1 && <div className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">x{cat.count}</div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={removeFriend} disabled={removing} className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-2xl hover:bg-red-100 active:scale-95 transition-all border-2 border-transparent hover:border-red-200">{removing ? "..." : "🗑️ Rimuovi Amico"}</button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* POPUP CHAT */}
+            <AnimatePresence>
+                {chatFriend && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" 
+                        onClick={() => setChatFriend(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.8, y: 50 }} 
+                            animate={{ scale: 1, y: 0 }} 
+                            exit={{ scale: 0.8, y: 50 }} 
+                            className="bg-white w-full max-w-sm h-[80vh] rounded-[40px] relative flex flex-col shadow-2xl overflow-hidden" 
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="bg-white px-4 py-4 border-b border-gray-100 z-10 text-center relative shrink-0">
+                                <div className="font-black text-xl leading-none truncate px-8">{chatFriend.email?.split('@')[0]}</div>
+                                <div className="text-xs font-bold text-green-500 uppercase tracking-wide">Online</div>
+                                <button onClick={() => setChatFriend(null)} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500 transition-colors">✕</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f0f2f5]">
+                                {messages.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                        <div className="text-4xl mb-2">👋</div>
+                                        <div className="text-xs font-bold">Saluta il tuo amico!</div>
+                                    </div>
+                                )}
+                                {messages.map((msg) => {
+                                    const isMe = msg.sender_id === myId;
+                                    return (
+                                        <div key={msg.id} className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}>
+                                            <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm break-words ${isMe ? "bg-black text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-200"}`}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className="p-3 bg-white border-t border-gray-200 shrink-0">
+                                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
+                                    <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Scrivi..." className="flex-1 bg-gray-100 rounded-full px-5 py-3 font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition" />
+                                    <button type="submit" disabled={!newMessage.trim()} className="w-11 h-11 bg-blue-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg active:scale-90 transition disabled:opacity-50 disabled:scale-100">➤</button>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>,
+        document.body
+      )}
+    </>
   );
 }
