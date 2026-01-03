@@ -32,14 +32,43 @@ export default function FriendsScreen() {
     loadFriends();
   }, []);
 
-  // Scroll automatico in basso
+  // --- LOGICA CHAT GRATUITA (POLLING) ---
   useEffect(() => {
-    if (chatFriend) {
+    if (!chatFriend || !myId) return;
+
+    // Funzione che scarica i messaggi
+    const fetchMessages = async () => {
+        const { data } = await supabase
+            .from("direct_messages")
+            .select("*")
+            .or(`and(sender_id.eq.${myId},receiver_id.eq.${chatFriend.user_id}),and(sender_id.eq.${chatFriend.user_id},receiver_id.eq.${myId})`)
+            .order("created_at", { ascending: true });
+        
+        // Aggiorniamo solo se abbiamo dati
+        if (data) setMessages(data);
+    };
+
+    // 1. Carica subito appena apri
+    fetchMessages();
+
+    // 2. Ricarica ogni 3 secondi (POLLING) - 100% GRATIS
+    const intervalId = setInterval(fetchMessages, 3000);
+
+    // 3. Pulisci quando chiudi la chat
+    return () => {
+        clearInterval(intervalId);
+    };
+  }, [chatFriend, myId]);
+
+  // Scroll automatico in basso (solo se arrivano nuovi messaggi)
+  useEffect(() => {
+    if (chatFriend && messages.length > 0) {
+        // Piccolo ritardo per assicurarsi che il DOM sia aggiornato
         setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
     }
-  }, [messages, chatFriend]);
+  }, [messages.length, chatFriend]);
 
   const loadFriends = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,32 +96,9 @@ export default function FriendsScreen() {
     setLoading(false);
   };
 
-  const openChat = async (friend: any) => {
+  const openChat = (friend: any) => {
+    setMessages([]); // Reset visivo
     setChatFriend(friend);
-    setMessages([]);
-
-    const { data } = await supabase
-        .from("direct_messages")
-        .select("*")
-        .or(`and(sender_id.eq.${myId},receiver_id.eq.${friend.user_id}),and(sender_id.eq.${friend.user_id},receiver_id.eq.${myId})`)
-        .order("created_at", { ascending: true });
-    
-    if (data) setMessages(data);
-
-    const channel = supabase
-      .channel('chat_room')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: `receiver_id=eq.${myId}` },
-        (payload) => {
-           if (payload.new.sender_id === friend.user_id) {
-               setMessages((prev) => [...prev, payload.new]);
-           }
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   };
 
   const sendMessage = async () => {
@@ -100,8 +106,9 @@ export default function FriendsScreen() {
     const msg = newMessage.trim();
     setNewMessage("");
 
+    // 1. Optimistic Update (Mostralo subito per farlo sembrare istantaneo)
     const optimisticMsg = {
-        id: Date.now(),
+        id: Date.now(), // ID temporaneo
         sender_id: myId,
         receiver_id: chatFriend.user_id,
         content: msg,
@@ -109,11 +116,14 @@ export default function FriendsScreen() {
     };
     setMessages((prev) => [...prev, optimisticMsg]);
 
+    // 2. Invia al server
     await supabase.from("direct_messages").insert({
         sender_id: myId,
         receiver_id: chatFriend.user_id,
         content: msg
     });
+    
+    // Non serve ricaricare qui, il polling ci penserà tra massimo 3 secondi a confermarlo
   };
 
   const openFriendCollection = async (friend: any) => {
@@ -213,7 +223,7 @@ export default function FriendsScreen() {
       </div>
     </div>
 
-      {/* --- POPUP TELETRASPORTATI SU BODY (Coprono BottomNav) --- */}
+      {/* --- POPUP TELETRASPORTATI --- */}
       {mounted && createPortal(
         <>
             {/* POPUP COLLEZIONE */}
@@ -257,7 +267,7 @@ export default function FriendsScreen() {
                             initial={{ scale: 0.8, y: 50 }} 
                             animate={{ scale: 1, y: 0 }} 
                             exit={{ scale: 0.8, y: 50 }} 
-                            // MODIFICA QUI: h-[80dvh] per adattarsi alla tastiera + max-h per sicurezza
+                            // h-[80dvh] previene lo spostamento su iOS
                             className="bg-white w-full max-w-sm h-[80dvh] rounded-[40px] relative flex flex-col shadow-2xl overflow-hidden" 
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -289,7 +299,7 @@ export default function FriendsScreen() {
 
                             <div className="p-3 bg-white border-t border-gray-200 shrink-0">
                                 <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
-                                    {/* MODIFICA QUI: text-base per evitare zoom */}
+                                    {/* text-base evita lo zoom automatico su iOS */}
                                     <input 
                                         value={newMessage} 
                                         onChange={(e) => setNewMessage(e.target.value)} 
