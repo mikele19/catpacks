@@ -46,7 +46,6 @@ export default function HomeScreen({
   onRedeem: (value: number) => void;
   lowPerfMode?: boolean;
 }) {
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   
   const [activeIndex, setActiveIndex] = useState(0);
@@ -61,11 +60,12 @@ export default function HomeScreen({
   const [lastXp, setLastXp] = useState(0);
   const [isNewCat, setIsNewCat] = useState(false);
 
-  // --- TRUCCO PER LA VELOCITÀ ---
-  // Usiamo un Ref per tenere in memoria la richiesta al server mentre l'utente tappa
+  // --- STATI PER IL REGALO GIORNALIERO ---
+  const [canRedeem, setCanRedeem] = useState(true);
+  const [timeLeft, setTimeLeft] = useState("");
+
   const packPromiseRef = useRef<Promise<any> | null>(null);
 
-  const initials = useMemo(() => (email ? email.slice(0, 2).toUpperCase() : "ME"), [email]);
   const activePack = PACKS[activeIndex];
   const openingPack = useMemo(() => PACKS.find(p => p.id === selectedPackId), [selectedPackId]);
 
@@ -81,28 +81,70 @@ export default function HomeScreen({
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) return setLoading(false);
-    setEmail(user.email ?? "");
+    
     const { data, error } = await supabase.from("users_profile").select("credits").eq("user_id", user.id).single();
     if (error) { await supabase.from("users_profile").upsert({ user_id: user.id, credits: 0 }); setCredits(0); } else { setCredits(data?.credits ?? 0); }
     setLoading(false);
   };
 
-  useEffect(() => { loadProfile(); }, []);
+  // --- LOGICA TIMER GIORNALIERO ---
+  useEffect(() => { 
+    loadProfile(); 
+
+    // Controllo timer locale per l'interfaccia
+    const checkTimer = () => {
+        const lastRedeem = localStorage.getItem("lastDailyRedeem");
+        if (lastRedeem) {
+            const diff = Date.now() - parseInt(lastRedeem);
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            if (diff < oneDay) {
+                setCanRedeem(false);
+                const remaining = oneDay - diff;
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                setTimeLeft(`${hours}h ${minutes}m`);
+            } else {
+                setCanRedeem(true);
+                setTimeLeft("");
+            }
+        }
+    };
+    
+    checkTimer();
+    const interval = setInterval(checkTimer, 60000); // Aggiorna ogni minuto
+    return () => clearInterval(interval);
+  }, []);
 
   const claimDaily = async () => {
+    if (!canRedeem) return;
     setBusy(true);
-    try { const headers = await getAuthHeader(); const res = await fetch("/api/claim-daily", { method: "POST", headers }); const json = await res.json(); if (!res.ok) throw new Error(json.error); setCredits(json.credits); vibrate(20); } finally { setBusy(false); }
+    try { 
+        const headers = await getAuthHeader(); 
+        const res = await fetch("/api/claim-daily", { method: "POST", headers }); 
+        const json = await res.json(); 
+        if (!res.ok) throw new Error(json.error); 
+        
+        setCredits(json.credits); 
+        vibrate(20);
+        
+        // Salva timestamp locale per il countdown
+        localStorage.setItem("lastDailyRedeem", Date.now().toString());
+        setCanRedeem(false);
+        alert("Hai ricevuto 20 monete!");
+    } catch(e: any) {
+        alert(e.message);
+    } finally { 
+        setBusy(false); 
+    }
   };
 
   const nextPack = () => { vibrate(5); setActiveIndex((prev) => (prev + 1) % PACKS.length); };
   const prevPack = () => { vibrate(5); setActiveIndex((prev) => (prev - 1 + PACKS.length) % PACKS.length); };
   const selectCurrentPack = () => { vibrate(10); setSelectedPackId(activePack.id); };
 
-  // Funzione che lancia la richiesta MA non aspetta la risposta (la salva nel Ref)
   const startPackFetch = () => {
     if (!openingPack) return;
-    
-    // Salviamo la promessa nel ref per usarla dopo
     packPromiseRef.current = (async () => {
         const headers = await getAuthHeader();
         const res = await fetch("/api/open-pack", { 
@@ -116,8 +158,6 @@ export default function HomeScreen({
 
   const tap = () => {
     if (isRevealing) return;
-    
-    // PRIMO TAP: Inizia subito a scaricare i dati!
     if (stage === "idle") { 
         if (busy || isRevealing) return;
         setBusy(true);
@@ -125,12 +165,9 @@ export default function HomeScreen({
         setTaps(0);
         setStage("charging");
         vibrate(10);
-        
-        // QUI È LA MAGIA: Lanciamo la richiesta mentre l'utente inizia a tappare
         startPackFetch();
         return; 
     }
-    
     if (stage !== "charging") return;
     setTaps((t) => Math.min(tapsNeeded, t + 1));
     vibrate(6);
@@ -144,7 +181,7 @@ export default function HomeScreen({
     setBusy(false);
     setLastXp(0);
     setIsNewCat(false);
-    packPromiseRef.current = null; // Puliamo la memoria
+    packPromiseRef.current = null;
   };
 
   const fullReset = () => {
@@ -154,33 +191,21 @@ export default function HomeScreen({
 
   useEffect(() => {
     (async () => {
-      // Se non abbiamo finito i tap, non fare nulla
       if (stage !== "charging" || taps < tapsNeeded) return;
-      
       setStage("opening");
       setIsRevealing(true);
       vibrate(40);
 
       try {
-        // Recuperiamo la richiesta che era partita al primo tap
-        if (!packPromiseRef.current) {
-            throw new Error("Errore fetch mancante");
-        }
-
-        // A questo punto, dato che l'utente ha impiegato tempo a fare 3 tap,
-        // la risposta è probabilmente GIÀ PRONTA! Istantaneo.
+        if (!packPromiseRef.current) throw new Error("Errore fetch mancante");
         const json = await packPromiseRef.current;
-        
         setCredits(json.credits);
         setLastCat(json.cat);
         setLastXp(json.xpGained || 0);
         setIsNewCat(json.isNew || false);
-        
-        // Nessun delay artificiale, mostriamo subito
         setStage("reveal");
         setIsRevealing(false);
         vibrate(50);
-
       } catch (err: any) {
         console.error(err);
         alert("Ops: " + err.message);
@@ -195,9 +220,7 @@ export default function HomeScreen({
 
   return (
     <div className="h-full w-full overflow-hidden relative flex flex-col"
-         style={{
-           background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)"
-         }}>
+         style={{ background: "radial-gradient(circle, #ffd700 0%, #ffac00 100%)" }}>
       
       <div className="absolute inset-[-50%] w-[200%] h-[200%] opacity-20 bg-[repeating-conic-gradient(from_0deg,#ffffff_0deg_10deg,transparent_10deg_20deg)] animate-spin-slow pointer-events-none mix-blend-overlay"></div>
 
@@ -214,15 +237,41 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      <div className="pt-4 px-3 flex items-center justify-between gap-2 w-full max-w-md mx-auto z-20 relative">
-         <div className="h-10 soft-ui-sm flex items-center px-4 gap-2 bg-white/90 backdrop-blur-sm shrink-0">
-            <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
-            <span className="font-black text-lg pt-0.5 text-yellow-900">{credits}</span>
+      {/* --- HEADER: Solo Monete --- */}
+      <div className="pt-4 px-3 flex items-center justify-center w-full max-w-md mx-auto z-20 relative">
+         <div className="h-12 soft-ui-sm flex items-center px-6 gap-3 bg-white/90 backdrop-blur-sm rounded-full shadow-md">
+            <img src="/ui/coin.png" alt="C" className="w-8 h-8 object-contain" />
+            <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
          </div>
-         <div className="flex items-center gap-2">
-             <button onClick={claimDaily} disabled={busy || isRevealing} className="h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-xl bg-white/90 backdrop-blur-sm">🎁</button>
-             <div className="h-10 w-10 soft-ui-sm flex items-center justify-center font-black text-xs text-yellow-900 bg-white/90 backdrop-blur-sm">{initials}</div>
-         </div>
+      </div>
+
+      {/* --- NUOVO TASTO REGALO GIORNALIERO --- */}
+      <div className="px-6 mt-4 w-full max-w-md mx-auto z-20 relative">
+        <button
+            onClick={claimDaily}
+            disabled={!canRedeem || busy || isRevealing}
+            className={`w-full relative group overflow-hidden rounded-2xl p-1 transition-all active:scale-95 shadow-lg border-b-4 border-black/10
+                ${canRedeem 
+                    ? "bg-gradient-to-r from-green-400 to-emerald-500 hover:brightness-110" 
+                    : "bg-gray-200 cursor-not-allowed grayscale opacity-80"
+                }
+            `}
+        >
+            <div className={`rounded-xl px-4 py-3 flex items-center gap-4 ${canRedeem ? "bg-white/10" : "bg-transparent"}`}>
+                <div className="text-3xl bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center shadow-sm backdrop-blur-md">
+                    🎁
+                </div>
+                <div className="flex-1 text-left">
+                    <div className={`text-[10px] font-black uppercase tracking-wider mb-0.5 ${canRedeem ? "text-green-50" : "text-gray-500"}`}>
+                        {canRedeem ? "Regalo Giornaliero" : "Torna tra"}
+                    </div>
+                    <div className={`text-lg font-black leading-none ${canRedeem ? "text-white" : "text-gray-600"}`}>
+                        {canRedeem ? "RISCATTA 20 MONETE" : timeLeft}
+                    </div>
+                </div>
+                {canRedeem && <div className="text-white text-xl animate-pulse">👉</div>}
+            </div>
+        </button>
       </div>
 
       <div className="flex-grow relative w-full flex flex-col items-center justify-center z-10 pb-16">
