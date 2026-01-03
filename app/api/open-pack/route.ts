@@ -7,7 +7,7 @@ const PACK_TIERS: Record<string, { cost: number, rates: any }> = {
   'basic': { cost: 10, rates: { common: 70, rare: 25, epic: 4, legendary: 0.9, mythic: 0.1 } },
   'advanced': { cost: 50, rates: { common: 40, rare: 45, epic: 12, legendary: 2.5, mythic: 0.5 } },
   'elite': { cost: 200, rates: { common: 0, rare: 40, epic: 45, legendary: 13, mythic: 2 } },
-  'god': { cost: 1000, rates: { common: 0, rare: 0, epic: 3, legendary: 0, mythic: 100 } }
+  'god': { cost: 1000, rates: { common: 0, rare: 0, epic: 30, legendary: 60, mythic: 10 } }
 };
 
 const XP_TABLE: Record<string, number> = {
