@@ -105,7 +105,6 @@ export default function HomeScreen({
                 const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
                 
-                // Formatta con lo zero davanti (es: 04:05:09)
                 const h = hours.toString().padStart(2, '0');
                 const m = minutes.toString().padStart(2, '0');
                 const s = seconds.toString().padStart(2, '0');
@@ -119,7 +118,7 @@ export default function HomeScreen({
     };
     
     checkTimer();
-    const interval = setInterval(checkTimer, 1000); // Aggiorna ogni secondo
+    const interval = setInterval(checkTimer, 1000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -243,20 +242,20 @@ export default function HomeScreen({
         )}
       </AnimatePresence>
 
-      {/* --- HEADER COMPATTO: MONETE + REGALO --- */}
-      <div className="pt-4 px-4 w-full max-w-md mx-auto z-20 relative flex items-center justify-center gap-3">
+      {/* --- HEADER: MONETE E REGALO SEPARATI --- */}
+      <div className="pt-4 px-4 w-full max-w-md mx-auto z-20 relative flex items-center justify-between">
          
-         {/* BOX MONETE */}
-         <div className="h-12 soft-ui-sm flex items-center px-5 gap-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm flex-1 justify-center">
+         {/* BOX MONETE (Sinistra) */}
+         <div className="h-12 w-[45%] soft-ui-sm flex items-center justify-center gap-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm">
             <img src="/ui/coin.png" alt="C" className="w-6 h-6 object-contain" />
             <span className="font-black text-2xl pt-1 text-yellow-900">{credits}</span>
          </div>
 
-         {/* BOX REGALO (Piccolo e a fianco) */}
+         {/* BOX REGALO (Destra) */}
          <button
             onClick={claimDaily}
             disabled={!canRedeem || busy || isRevealing}
-            className={`h-12 soft-ui-sm px-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 flex-1
+            className={`h-12 w-[45%] soft-ui-sm px-2 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95
                 ${canRedeem 
                     ? "bg-white/90 text-yellow-900 border-b-4 border-yellow-200" 
                     : "bg-black/10 text-black/40 border-b-4 border-transparent"
@@ -264,7 +263,7 @@ export default function HomeScreen({
             `}
          >
             <span className="text-xl">🎁</span>
-            <span className="font-black text-xs uppercase pt-0.5 tracking-wide">
+            <span className="font-black text-[10px] uppercase pt-0.5 tracking-wide leading-none text-center">
                 {canRedeem ? "RISCATTA" : timeLeft}
             </span>
          </button>
@@ -275,7 +274,10 @@ export default function HomeScreen({
         <AnimatePresence mode="wait">
           {!selectedPackId ? (
             <motion.div key="carousel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.2 }} className="w-full flex flex-col items-center justify-center">
-              <img src="/ui/logo.png" alt="Logo" className="w-48 mb-4 drop-shadow-xl" />
+              
+              {/* LOGO PIÙ GRANDE E IN ALTO (-mt-10) */}
+              <img src="/ui/logo.png" alt="Logo" className="w-72 -mt-10 mb-8 drop-shadow-xl" />
+              
               <div className="relative w-full max-w-sm h-56 flex items-center justify-center perspective-500">
                 <button onClick={prevPack} className="absolute left-2 z-30 h-10 w-10 soft-ui-sm soft-btn flex items-center justify-center text-gray-500 bg-white/80 text-lg">◀</button>
                 <motion.div className="absolute left-6 opacity-40 scale-75 blur-[1px] grayscale" animate={{ x: -25, rotateY: -25 }}>
