@@ -136,7 +136,7 @@ export default function HomeScreen({
         
         localStorage.setItem("lastDailyRedeem", Date.now().toString());
         setCanRedeem(false);
-        alert("Hai ricevuto 20 monete!");
+        // RIMOSSO L'ALERT QUI
     } catch(e: any) {
         alert(e.message);
     } finally { 
