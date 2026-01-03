@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom"; // <--- IMPORTANTE
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -13,7 +13,6 @@ export default function FriendsScreen() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   
-  // Serve per il Portal (teletrasporto popup)
   const [mounted, setMounted] = useState(false);
 
   // --- STATI COLLEZIONE ---
@@ -29,7 +28,7 @@ export default function FriendsScreen() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true); // Siamo nel browser, possiamo usare i Portal
+    setMounted(true);
     loadFriends();
   }, []);
 
@@ -258,7 +257,8 @@ export default function FriendsScreen() {
                             initial={{ scale: 0.8, y: 50 }} 
                             animate={{ scale: 1, y: 0 }} 
                             exit={{ scale: 0.8, y: 50 }} 
-                            className="bg-white w-full max-w-sm h-[80vh] rounded-[40px] relative flex flex-col shadow-2xl overflow-hidden" 
+                            // MODIFICA QUI: h-[80dvh] per adattarsi alla tastiera + max-h per sicurezza
+                            className="bg-white w-full max-w-sm h-[80dvh] rounded-[40px] relative flex flex-col shadow-2xl overflow-hidden" 
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="bg-white px-4 py-4 border-b border-gray-100 z-10 text-center relative shrink-0">
@@ -289,7 +289,13 @@ export default function FriendsScreen() {
 
                             <div className="p-3 bg-white border-t border-gray-200 shrink-0">
                                 <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
-                                    <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Scrivi..." className="flex-1 bg-gray-100 rounded-full px-5 py-3 font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition" />
+                                    {/* MODIFICA QUI: text-base per evitare zoom */}
+                                    <input 
+                                        value={newMessage} 
+                                        onChange={(e) => setNewMessage(e.target.value)} 
+                                        placeholder="Scrivi..." 
+                                        className="flex-1 bg-gray-100 rounded-full px-5 py-3 font-bold text-base outline-none focus:bg-white border-2 border-transparent focus:border-black/10 transition" 
+                                    />
                                     <button type="submit" disabled={!newMessage.trim()} className="w-11 h-11 bg-blue-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg active:scale-90 transition disabled:opacity-50 disabled:scale-100">➤</button>
                                 </form>
                             </div>
